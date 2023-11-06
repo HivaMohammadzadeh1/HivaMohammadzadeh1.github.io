@@ -796,12 +796,12 @@ h1, h2, h3, h4, h5, h6, figure {
 }
 #fh5co-started .fh5co-heading h2 {
   color: #fff;
-  margin-bottom: 15px !important;
+  margin-bottom: 20px !important;
   font-size: 50px;
 }
 #fh5co-started .fh5co-heading p {
   color: rgba(255, 255, 255, 0.879);
-  font-size: 22px;
+  font-size: 20px;
 }
 #fh5co-started .btn {
   height: 70px;
