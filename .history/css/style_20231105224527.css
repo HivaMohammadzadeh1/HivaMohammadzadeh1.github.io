@@ -1120,10 +1120,10 @@ input[type="text"] {
 
 .btn-primary {
   /* background: #FF9000; */
-  background: #1b2793;
+  background: #27436e;
   color: #fff;
   /* border: 2px solid #FF9000; */
-  border: 2px solid #1b2793;
+  border: 2px solid #2F3C4F;
 }
 .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
   background: #ff9b1a !important;

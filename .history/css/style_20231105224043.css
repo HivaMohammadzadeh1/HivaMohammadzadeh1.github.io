@@ -311,7 +311,7 @@ h1, h2, h3, h4, h5, h6, figure {
 .fh5co-bg-dark {
   background: #2F3C4F;
   /* background: #FF9000; */
-  background: rgba(0, 166, 255, 0.9);;
+  /* background: rgba(0, 166, 255, 0.9);; */
 }
 .fh5co-bg-dark .fh5co-heading h2 {
   color: #fff !important;
@@ -1096,7 +1096,7 @@ input[type="text"] {
   margin-right: 4px;
   margin-bottom: 4px;
   font-family: "Space Mono", Arial, serif;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 400;
   -webkit-border-radius: 30px;
   -moz-border-radius: 30px;
@@ -1119,11 +1119,9 @@ input[type="text"] {
 }
 
 .btn-primary {
-  /* background: #FF9000; */
-  background: #1b2793;
+  background: #FF9000;
   color: #fff;
-  /* border: 2px solid #FF9000; */
-  border: 2px solid #1b2793;
+  border: 2px solid #FF9000;
 }
 .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
   background: #ff9b1a !important;
