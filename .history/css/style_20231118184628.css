@@ -197,6 +197,9 @@ h1, h2, h3, h4, h5, h6, figure {
   #fh5co-header .display-tc h3,
   .fh5co-cover .display-tc h3 {
     font-size: 18px;
+
+
+    
   }
 }
 #fh5co-header .display-tc .profile-thumb,
@@ -583,10 +586,6 @@ h1, h2, h3, h4, h5, h6, figure {
   border-right-width: 14px;
   left: -14px;
   right: auto;
-}
-
-.underline-link {
-  text-decoration: underline;
 }
 
 .timeline-title {
