@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deep Learning from the Inside Out | Hiva Mohammadzadeh</title>
+  <meta name="description" content="Deep dives into LLM architectures, normalization, activation functions, and benchmarks. Every model broken down to its weight matrices, diagrams, and FLOPs.">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Index-specific styles */
+
+    /* Architecture preview cards */
+    .arch-preview {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+    .arch-preview .arch-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+      transition: all 0.3s var(--ease);
+      text-decoration: none;
+      color: var(--text);
+    }
+    .arch-preview .arch-item:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: rgba(99,102,241,0.2);
+    }
+    .arch-preview .arch-item .icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 0.65rem;
+      font-weight: 900; font-size: 0.65rem; color: #fff;
+      letter-spacing: 0.02em;
+    }
+    .arch-preview .arch-item h4 { font-size: 0.85rem; font-weight: 750; margin-bottom: 0.15rem; }
+    .arch-preview .arch-item p { font-size: 0.7rem; color: var(--text-muted); margin: 0; line-height: 1.4; }
+
+    /* Author card */
+    .author-card {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-xl);
+      padding: 1.75rem 2rem;
+      margin-top: 2.5rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s var(--ease);
+    }
+    .author-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: rgba(99,102,241,0.15);
+    }
+    .author-card .photo {
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid transparent;
+      background: linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+                  linear-gradient(135deg, var(--accent-blue), var(--accent-violet)) border-box;
+      flex-shrink: 0;
+    }
+    .author-card .info { flex: 1; }
+    .author-card .info h3 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin: 0 0 0.25rem 0;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    .author-card .info .affiliations {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .author-card .info .aff-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.22rem 0.6rem;
+      border-radius: 6px;
+      letter-spacing: 0.02em;
+    }
+    .aff-badge.stanford {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .aff-badge.berkeley {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+    .author-card .info .bio {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin: 0 0 0.65rem 0;
+    }
+    .author-card .info .links {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .author-card .info .links a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--accent-indigo);
+      text-decoration: none;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      background: rgba(99,102,241,0.05);
+      border: 1px solid rgba(99,102,241,0.1);
+      transition: all 0.2s var(--ease);
+    }
+    .author-card .info .links a:hover {
+      background: rgba(99,102,241,0.1);
+      border-color: rgba(99,102,241,0.2);
+    }
+
+    /* Origin banner */
+    .origin-banner {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 1px solid #fcd34d;
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.5rem;
+      margin-top: 2rem;
+      font-size: 0.88rem;
+      color: #92400e;
+      line-height: 1.55;
+    }
+    .origin-banner .icon-wrap {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: #fbbf24;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 1.1rem;
+    }
+    .origin-banner a {
+      color: #92400e;
+      font-weight: 700;
+      text-decoration-color: rgba(146, 64, 14, 0.3);
+    }
+    .origin-banner a:hover { text-decoration-color: #92400e; }
+
+    @media (max-width: 640px) {
+      .arch-preview { grid-template-columns: repeat(2, 1fr); }
+      .author-card { flex-direction: column; text-align: center; padding: 1.5rem; }
+      .author-card .info .affiliations { justify-content: center; }
+      .author-card .info .links { justify-content: center; }
+      .origin-banner { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-mesh">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<header class="site-header" id="header">
+  <div class="container-wide">
+    <a href="index.html" class="site-title">
+      <span class="logo-mark">DL</span>
+      Inside Out
+    </a>
+    <nav class="site-nav">
+      <a href="#foundations">Foundations</a>
+      <a href="#architectures">Architectures</a>
+      <a href="#techniques">Techniques</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-eyebrow">10-part technical series</div>
+    <h1><span class="gradient-text">Deep Learning</span><br>from the Inside Out</h1>
+    <p class="subtitle">
+      Every architecture broken down to its weight matrices, computation diagrams, and FLOPs. No hand-waving -- just the math, the shapes, and the intuition.
+    </p>
+
+    <!-- Author Card with Photo -->
+    <div class="author-card">
+      <img src="images/hiva-profile.jpeg" alt="Hiva Mohammadzadeh" class="photo">
+      <div class="info">
+        <h3>Hiva Mohammadzadeh</h3>
+        <div class="affiliations">
+          <span class="aff-badge stanford">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            Stanford MSCS
+          </span>
+          <span class="aff-badge berkeley">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            UC Berkeley EECS
+          </span>
+        </div>
+        <p class="bio">MS in Computer Science at Stanford. Previously UC Berkeley EECS. Researching efficient NLP, LLM architectures, and model compression.</p>
+        <div class="links">
+          <a href="https://hivam.org/">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20 15.3 15.3 0 010-20z"/></svg>
+            hivam.org
+          </a>
+          <a href="https://github.com/HivaMohammadzadeh1/Presentations">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            Presentations
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Origin Banner -->
+    <div class="origin-banner">
+      <div class="icon-wrap">&#128218;</div>
+      <div>
+        These blog posts are based on <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations and tutorials I created in 2023</a> to survey Large Language Models, benchmarks, normalization techniques, and activation functions, along with my <a href="https://github.com/HivaMohammadzadeh1/SupervisedIndependentStud">CS199 Supervised Independent Study</a> at UC Berkeley EECS where I surveyed 11 foundational papers from "Attention is All You Need" through GPT-4. Now expanded into this blog series.
+      </div>
+    </div>
+
+    <div class="stats-bar" style="margin-top: 2rem; grid-template-columns: repeat(2, 1fr);">
+      <div class="stat">
+        <span class="stat-number">10</span>
+        <span class="stat-label">Deep Dives</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number">4</span>
+        <span class="stat-label">LLM Architectures</span>
+      </div>
+    </div>
+
+    <!-- Architecture Quick Nav -->
+    <div class="arch-preview">
+      <a href="posts/03-bert-model.html" class="arch-item">
+        <div class="icon" style="background: linear-gradient(135deg, #2563eb, #3b82f6);">BERT</div>
+        <h4>BERT</h4>
+        <p>Encoder-Only<br>Bidirectional</p>
+      </a>
+      <a href="posts/04-gpt2-model.html" class="arch-item">
+        <div class="icon" style="background: linear-gradient(135deg, #7c3aed, #8b5cf6);">GPT</div>
+        <h4>GPT-2</h4>
+        <p>Decoder-Only<br>Autoregressive</p>
+      </a>
+      <a href="posts/05-t5-model.html" class="arch-item">
+        <div class="icon" style="background: linear-gradient(135deg, #059669, #10b981);">T5</div>
+        <h4>T5</h4>
+        <p>Encoder-Decoder<br>Text-to-Text</p>
+      </a>
+      <a href="posts/06-llama-model.html" class="arch-item">
+        <div class="icon" style="background: linear-gradient(135deg, #d97706, #f59e0b);">LL</div>
+        <h4>LLaMA</h4>
+        <p>Efficient LLM<br>SwiGLU + RoPE</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- Foundations -->
+  <section id="foundations">
+    <div class="section-header">
+      <h2>Foundations</h2>
+      <div class="line"></div>
+    </div>
+    <ul class="post-grid">
+      <li class="post-card">
+        <div class="card-accent" style="background: linear-gradient(180deg, #6366f1, #8b5cf6);"></div>
+        <div class="card-body">
+          <span class="series-label" style="color: #7c3aed; background: rgba(124,58,237,0.06); border-color: rgba(124,58,237,0.1);">Start Here</span>
+          <a href="posts/00-transformer-attention.html" class="post-title">The Transformer: Where It All Started</a>
+          <div class="post-meta">Attention is All You Need &middot; Self-Attention &middot; RNN → Transformer &middot; Encoder vs Decoder</div>
+          <p class="post-excerpt">The 2017 paper that launched everything. I trace the path from RNNs through seq2seq to the Transformer, explain self-attention and multi-head attention from scratch, and compare the three architecture families that every modern LLM builds on.</p>
+          <a href="posts/00-transformer-attention.html" class="read-link">Read post <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+      </li>
+      <li class="post-card">
+        <div class="card-accent"></div>
+        <div class="card-body">
+          <span class="series-label">Building Blocks</span>
+          <a href="posts/01-activation-functions.html" class="post-title">A Survey of Activation Functions in Deep Learning</a>
+          <div class="post-meta">Linear &middot; Sigmoid &middot; Tanh &middot; ReLU &middot; Leaky ReLU &middot; GeLU &middot; Swish</div>
+          <p class="post-excerpt">Activation functions are the nonlinearity that makes deep learning work. Every major function covered -- from the classics that started it all to the modern picks powering today's transformers.</p>
+          <a href="posts/01-activation-functions.html" class="read-link">Read post <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+      </li>
+      <li class="post-card">
+        <div class="card-accent"></div>
+        <div class="card-body">
+          <span class="series-label">Building Blocks</span>
+          <a href="posts/02-normalization-techniques.html" class="post-title">Normalization Techniques: From BatchNorm to RMSNorm</a>
+          <div class="post-meta">Layer Norm &middot; Batch Norm &middot; Group Norm &middot; RMSNorm &middot; Instance Norm &middot; Weight Norm</div>
+          <p class="post-excerpt">Normalization keeps your network from exploding during training. Every major technique surveyed, with practical guidance on when to use each one in modern architectures.</p>
+          <a href="posts/02-normalization-techniques.html" class="read-link">Read post <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+      </li>
+      <li class="post-card">
+        <div class="card-accent"></div>
+        <div class="card-body">
+          <span class="series-label">Evaluation</span>
+          <a href="posts/07-glue-superglue.html" class="post-title">GLUE and SuperGLUE: How We Measure Language Understanding</a>
+          <div class="post-meta">9 GLUE tasks &middot; 8 SuperGLUE tasks &middot; Metrics &middot; Real examples</div>
+          <p class="post-excerpt">Before you can improve a model, you need to measure it. Every task in both benchmarks broken down with concrete examples, dataset sizes, and evaluation metrics.</p>
+          <a href="posts/07-glue-superglue.html" class="read-link">Read post <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Model Architectures -->
+  <section id="architectures">
+    <div class="section-header">
+      <h2>Model Architectures</h2>
+      <div class="line"></div>
+    </div>
+    <ul class="post-grid">
+      <li class="post-card">
+        <div class="card-accent" style="background: linear-gradient(180deg, #2563eb, #3b82f6);"></div>
+        <div class="card-body">
+          <span class="series-label">Encoder-Only</span>
+          <a href="posts/03-bert-model.html" class="post-title">BERT from the Inside Out: Architecture, Matrices, and FLOPs</a>
+          <div class="post-meta">12 blocks &middot; 768-dim &middot; Bidirectional &middot; 1.86B FLOPs/block</div>
+          <p class="post-excerpt">BERT reads text bidirectionally. I trace the data flow from input embeddings through multi-head self-attention and feed-forward layers, with exact tensor dimensions and FLOP calculations at every step.</p>
+          <a href="posts/03-bert-model.html" class="read-link">Read post <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+      </li>
+      <li class="post-card">
+        <div class="card-accent" style="background: linear-gradient(180deg, #7c3aed, #8b5cf6);"></div>
+        <div class="card-body">
+          <span class="series-label">Decoder-Only</span>
+          <a href="posts/04-gpt2-model.html" class="post-title">GPT-2 Internals: How a Decoder-Only Transformer Works</a>
+          <div class="post-meta">12 blocks &middot; Causal Mask &middot; Autoregressive &middot; 1.51B FLOPs/block</div>
+          <p class="post-excerpt">GPT-2 generates text one token at a time. I explain the causal mask, walk through the full computation diagram, and compare its FLOPs against BERT's encoder architecture.</p>
+          <a href="posts/04-gpt2-model.html" class="read-link">Read post <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+      </li>
+      <li class="post-card">
+        <div class="card-accent" style="background: linear-gradient(180deg, #059669, #10b981);"></div>
+        <div class="card-body">
+          <span class="series-label">Encoder-Decoder</span>
+          <a href="posts/05-t5-model.html" class="post-title">T5: The Text-to-Text Transformer, End to End</a>
+          <div class="post-meta">12 enc + dec blocks &middot; Cross-Attention &middot; Span Corruption &middot; Prefix Conditioning</div>
+          <p class="post-excerpt">T5 treats every NLP task as text-to-text. Encoder self-attention, decoder masked attention, and the cross-attention bridge -- the key piece that gives T5 the best of both worlds.</p>
+          <a href="posts/05-t5-model.html" class="read-link">Read post <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+      </li>
+      <li class="post-card">
+        <div class="card-accent" style="background: linear-gradient(180deg, #d97706, #f59e0b);"></div>
+        <div class="card-body">
+          <span class="series-label">Efficient LLM</span>
+          <a href="posts/06-llama-model.html" class="post-title">LLaMA's Efficiency Playbook: RMSNorm, SwiGLU, and RoPE</a>
+          <div class="post-meta">7B-65B params &middot; SwiGLU FFN &middot; Rotary Embeddings &middot; Open Data Only</div>
+          <p class="post-excerpt">LLaMA proved smaller models trained on more data beat larger models. Three key innovations -- RMSNorm, SwiGLU, and rotary embeddings -- traced through the full computation flow.</p>
+          <a href="posts/06-llama-model.html" class="read-link">Read post <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Techniques -->
+  <section id="techniques">
+    <div class="section-header">
+      <h2>Techniques</h2>
+      <div class="line"></div>
+    </div>
+    <ul class="post-grid">
+      <li class="post-card">
+        <div class="card-accent" style="background: linear-gradient(180deg, #e11d48, #f43f5e);"></div>
+        <div class="card-body">
+          <span class="series-label">Prompting</span>
+          <a href="posts/08-prompt-tuning.html" class="post-title">Prompt Tuning: From Hard Prompts to Chain-of-Thought</a>
+          <div class="post-meta">Fine-Tuning &middot; Soft Prompts &middot; Prefix Tuning &middot; CoT &middot; MedPrompt (90.2% on MedQA)</div>
+          <p class="post-excerpt">The full evolution from expensive fine-tuning to parameter-efficient prompting. From hard prompts through soft prompts and ensembling, with a case study where MedPrompt pushed GPT-4 to 90.2% on medical QA.</p>
+          <a href="posts/08-prompt-tuning.html" class="read-link">Read post <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+      </li>
+      <li class="post-card">
+        <div class="card-accent" style="background: linear-gradient(180deg, #6366f1, #7c3aed);"></div>
+        <div class="card-body">
+          <span class="series-label" style="color: #7c3aed; background: rgba(124,58,237,0.06); border-color: rgba(124,58,237,0.1);">Scaling</span>
+          <a href="posts/09-scaling-foundation-models.html" class="post-title">From GPT-3 to GPT-4: Scaling Laws, Few-Shot Learning, and Foundation Models</a>
+          <div class="post-meta">GPT-3 (175B) &middot; PaLM (540B) &middot; GPT-4 (Multimodal) &middot; Ethics &middot; Foundation Models</div>
+          <p class="post-excerpt">What happens when you scale a decoder-only transformer from millions to hundreds of billions of parameters? Few-shot learning emerges, multimodal capabilities appear, and entirely new risks surface. The capstone post covering GPT-3, PaLM, GPT-4, and the foundation model debate.</p>
+          <a href="posts/09-scaling-foundation-models.html" class="read-link">Read post <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p><strong>Deep Learning from the Inside Out</strong></p>
+    <p style="margin-top: 0.3rem;">
+      <a href="https://hivam.org/">Hiva Mohammadzadeh</a> &middot;
+      Stanford MSCS &middot; UC Berkeley EECS
+    </p>
+    <p style="margin-top: 0.4rem; font-size: 0.8rem;">
+      Based on <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a> originally created in 2023
+    </p>
+  </div>
+</footer>
+
+<script>
+// Sticky header shadow on scroll
+const header = document.getElementById('header');
+window.addEventListener('scroll', () => {
+  header.classList.toggle('scrolled', window.scrollY > 10);
+}, { passive: true });
+</script>
+
+</body>
+</html>

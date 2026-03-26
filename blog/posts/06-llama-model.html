@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Details of the LLaMA Model (Large Language Model Meta AI) | Hiva Mohammadzadeh</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-mesh">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Reading progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<header class="site-header" id="header">
+  <div class="container-wide" style="max-width: 1140px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;">
+    <a href="../index.html" class="site-title">
+      <span class="logo-mark">DL</span>
+      Inside Out
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">All Posts</a>
+      <a href="05-t5-model.html">&larr; T5: The Text-to-Text Transformer</a>
+      <a href="07-glue-superglue.html">GLUE and SuperGLUE Benchmarks &rarr;</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <article>
+    <h1 id="details-of-the-llama-model-large-language-model-meta-ai">Details of the LLaMA Model (Large Language Model Meta AI)</h1>
+<p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
+<div class="tldr-box">
+
+**TL;DR:** LLaMA proves that you do not need the biggest model to get the best results -- you need a smaller model trained on more and better data for longer. It is a family of encoder-decoder transformers (7B to 65B parameters) trained entirely on publicly available datasets, designed to be cheap at inference. The key architectural changes over the original transformer: RMSNorm for pre-normalization, SwiGLU activation in the feed-forward network (which introduces a third weight matrix), and Rotary Positional Embeddings (RoPE) instead of absolute position encodings. These choices make LLaMA faster, more stable to train, and fully open-source compatible.
+
+</div>
+
+<hr />
+<h2 id="the-llama-philosophy-open-data-efficient-inference">The LLaMA Philosophy: Open Data, Efficient Inference</h2>
+<p>The central insight behind LLaMA is counterintuitive: the best-performing language models are not the largest ones. They are smaller models trained on more data, better data, and for longer. This flips the scaling mindset that dominated the field for years. Instead of throwing more parameters at the problem, LLaMA asks: what if we throw more compute at training a reasonably sized model?</p>
+<p>LLaMA is a collection of foundation language models ranging from 7B to 65B parameters. It works the way all autoregressive models work -- it takes a sequence of words as input and predicts the next word, recursively generating text one token at a time. What sets it apart is the training philosophy and the architectural refinements that make it efficient.</p>
+<p>Two commitments define LLaMA. First, the model is trained exclusively on publicly available data: CommonCrawl, C4, GitHub, Wikipedia, and others. No proprietary datasets. This makes LLaMA fully compatible with open-sourcing, which is why it became the backbone of the open-source LLM ecosystem. Second, the goal is to make models that are cheaper at inference. A 13B model that matches GPT-3's performance at a fraction of the serving cost is more valuable in practice than a 175B model that requires a cluster to run.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_llama_model/page-02.png" alt="LLaMA model family overview showing parameter counts and training data sources" loading="lazy">
+  <p class="caption">LLaMA model family overview showing parameter counts and training data sources</p>
+</div>
+
+<hr />
+<h2 id="training-pre-training-and-fine-tuning">Training: Pre-Training and Fine-Tuning</h2>
+<p>LLaMA's training follows the standard two-phase approach, but the details of the pre-training phase matter.</p>
+<p><strong>Pre-Training</strong> is unsupervised. The model is trained to predict the next token in a sequence given all past and present tokens. The training data spans the 20 languages with the most speakers, focusing on those using Latin and Cyrillic alphabets. The scale and diversity of the pre-training corpus is what allows smaller models to punch above their weight.</p>
+<p><strong>Fine-Tuning</strong> adapts the pre-trained model to specific downstream tasks by adding a task-specific output layer. The expensive pre-training happens once; fine-tuning is comparatively cheap and fast.</p>
+<hr />
+<h2 id="key-innovations">Key Innovations</h2>
+<p>LLaMA does not invent a new architecture from scratch. It takes the original transformer and makes surgical modifications that improve training stability, convergence speed, and computational efficiency. Three changes stand out.</p>
+<div class="arch-diagram">
+<svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <rect width="720" height="340" fill="#fafaff" rx="12"/>
+  <text x="360" y="28" text-anchor="middle" font-size="15" font-weight="800" fill="#1e3a5f">LLaMA: Three Key Modifications</text>
+
+  <!-- Standard Column -->
+  <rect x="30" y="50" width="200" height="260" rx="10" fill="#f8f8fc" stroke="#e4e4e7" stroke-width="1.5"/>
+  <text x="130" y="72" text-anchor="middle" font-size="11" font-weight="800" fill="#71717a">Standard Transformer</text>
+
+  <rect x="50" y="240" width="160" height="28" rx="5" fill="#fae8ff" stroke="#e879f9" stroke-width="1"/>
+  <text x="130" y="259" text-anchor="middle" font-size="9" font-weight="600" fill="#86198f">Self-Attention</text>
+
+  <rect x="50" y="205" width="160" height="24" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="130" y="221" text-anchor="middle" font-size="9" font-weight="600" fill="#166534">Post-Norm (LayerNorm)</text>
+
+  <rect x="50" y="165" width="160" height="28" rx="5" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+  <text x="130" y="181" text-anchor="middle" font-size="9" font-weight="600" fill="#92400e">FFN + ReLU/GELU</text>
+  <text x="130" y="191" text-anchor="middle" font-size="7" fill="#b45309">(768 → 3072 → 768)</text>
+
+  <rect x="50" y="130" width="160" height="24" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="130" y="146" text-anchor="middle" font-size="9" font-weight="600" fill="#166534">Post-Norm (LayerNorm)</text>
+
+  <rect x="50" y="92" width="160" height="28" rx="5" fill="#e0e7ff" stroke="#a5b4fc" stroke-width="1"/>
+  <text x="130" y="108" text-anchor="middle" font-size="8" font-weight="600" fill="#3730a3">Absolute Position Embed</text>
+  <text x="130" y="118" text-anchor="middle" font-size="7" fill="#6366f1">(added once at input)</text>
+
+  <!-- Arrow -->
+  <text x="287" y="190" text-anchor="middle" font-size="28" fill="#d97706">→</text>
+
+  <!-- LLaMA Column -->
+  <rect x="335" y="50" width="355" height="260" rx="10" fill="#fffbf0" stroke="#f59e0b" stroke-width="2"/>
+  <text x="512" y="72" text-anchor="middle" font-size="11" font-weight="800" fill="#d97706">LLaMA Modifications</text>
+
+  <rect x="355" y="240" width="160" height="28" rx="5" fill="#fae8ff" stroke="#e879f9" stroke-width="1"/>
+  <text x="435" y="259" text-anchor="middle" font-size="9" font-weight="600" fill="#86198f">Self-Attention</text>
+
+  <!-- RMSNorm PRE -->
+  <rect x="540" y="240" width="130" height="28" rx="5" fill="#fef2f2" stroke="#f87171" stroke-width="2"/>
+  <text x="605" y="255" text-anchor="middle" font-size="8" font-weight="800" fill="#dc2626">Pre-RMSNorm</text>
+  <text x="605" y="265" text-anchor="middle" font-size="6" fill="#ef4444">simpler, faster</text>
+
+  <!-- SwiGLU FFN -->
+  <rect x="355" y="165" width="160" height="34" rx="5" fill="#fff7ed" stroke="#f97316" stroke-width="2"/>
+  <text x="435" y="180" text-anchor="middle" font-size="9" font-weight="800" fill="#c2410c">FFN + SwiGLU</text>
+  <text x="435" y="193" text-anchor="middle" font-size="7" fill="#ea580c">(4096 → 11008 → 4096)</text>
+
+  <!-- 3 weight matrices note -->
+  <rect x="540" y="168" width="130" height="28" rx="5" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/>
+  <text x="605" y="183" text-anchor="middle" font-size="7" font-weight="700" fill="#c2410c">3 weight matrices</text>
+  <text x="605" y="193" text-anchor="middle" font-size="6" fill="#ea580c">(not 2 like standard)</text>
+
+  <!-- RoPE -->
+  <rect x="355" y="92" width="160" height="34" rx="5" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+  <text x="435" y="107" text-anchor="middle" font-size="9" font-weight="800" fill="#1d4ed8">RoPE</text>
+  <text x="435" y="120" text-anchor="middle" font-size="7" fill="#2563eb">Rotary Position Embedding</text>
+
+  <rect x="540" y="95" width="130" height="28" rx="5" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="605" y="110" text-anchor="middle" font-size="7" font-weight="700" fill="#1d4ed8">at every layer</text>
+  <text x="605" y="120" text-anchor="middle" font-size="6" fill="#3b82f6">(not just input)</text>
+
+  <rect x="355" y="130" width="160" height="24" rx="5" fill="#fef2f2" stroke="#f87171" stroke-width="1.5"/>
+  <text x="435" y="146" text-anchor="middle" font-size="8" font-weight="700" fill="#dc2626">Pre-RMSNorm</text>
+
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+</svg>
+<p class="caption">LLaMA's three key changes: Pre-normalization with RMSNorm (faster than LayerNorm), SwiGLU activation with 3 weight matrices in the FFN, and RoPE applied at every layer instead of absolute embeddings at input only.</p>
+</div>
+
+<h3 id="rmsnorm-pre-normalization-for-stability">RMSNorm: Pre-Normalization for Stability</h3>
+<p>The original transformer applies Layer Normalization after each sub-layer (post-norm). LLaMA switches to <strong>pre-normalization</strong>: it normalizes the input of each sub-layer before the computation, not the output. And instead of standard Layer Norm, it uses RMSNorm.</p>
+<p>RMSNorm is an extension of Layer Norm that drops the re-centering step entirely. Instead of computing both mean and variance, it only computes the root mean square of the activations across all feature dimensions, producing a single scalar value per example. That scalar normalizes the activations, and a learnable scale parameter is applied afterward:</p>
+<div class="math-block">
+  <code>RMS(a) = &radic;( (1/n) &sum; a<sub>i</sub><sup>2</sup> )</code><br>
+  <code>a&#772;<sub>i</sub> = (a<sub>i</sub> / RMS(a)) &middot; g<sub>i</sub></code>
+</div>
+
+<p>Why this matters in practice: RMSNorm is more effective than Layer Norm when your data has high variance, which is common in large-scale language modeling. It gives the model re-scaling invariance and implicit learning rate adaptation. And because it only needs one pass through the activations (no separate mean computation), it is computationally simpler and faster. At the scale LLaMA operates, that efficiency adds up.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_llama_model/page-05.png" alt="RMSNorm normalization formula and computation flow" loading="lazy">
+  <p class="caption">RMSNorm normalization formula and computation flow</p>
+</div>
+
+<h3 id="swiglu-a-better-activation-function">SwiGLU: A Better Activation Function</h3>
+<p>LLaMA replaces the standard ReLU (or GeLU) activation in the feed-forward network with <strong>SwiGLU</strong> -- a combination of the Swish activation function and the Gated Linear Unit (GLU).</p>
+<p>The building blocks:</p>
+<div class="math-block">
+  <code>FFN<sub>Swish</sub>(x, W<sub>1</sub>, W<sub>2</sub>) = Swish<sub>1</sub>(xW<sub>1</sub>) W<sub>2</sub></code><br>
+  <code>GLU(x, W, V, b, c) = &sigma;(xW + b) &otimes; (xV + c)</code><br>
+  <code>FFN<sub>SwiGLU</sub>(x, W, V, W<sub>2</sub>) = (Swish<sub>1</sub>(xW) &otimes; xV) W<sub>2</sub></code>
+</div>
+
+<p>SwiGLU is smoother than ReLU, which translates to better performance and faster convergence. The gating mechanism allows it to capture complex nonlinear relationships that a simple point-wise activation cannot. The practical consequence is that the feed-forward network now has <strong>three weight matrices</strong> instead of two -- more on this below, because it changes the dimension calculations significantly.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_llama_model/page-06.png" alt="SwiGLU activation function formulation and comparison to ReLU" loading="lazy">
+  <p class="caption">SwiGLU activation function formulation and comparison to ReLU</p>
+</div>
+
+<h3 id="rotary-positional-embeddings-rope">Rotary Positional Embeddings (RoPE)</h3>
+<p>LLaMA removes absolute positional embeddings entirely and replaces them with <strong>Rotary Positional Embeddings (RoPE)</strong> applied at every layer of the network.</p>
+<p>RoPE encodes absolute positional information using a rotation matrix while naturally incorporating explicit relative position dependency in the self-attention formulation. The idea is elegant: instead of adding a position vector to the embeddings once at the input, you rotate the query and key vectors by an angle proportional to their position in the sequence:</p>
+<div class="math-block">
+  <code>f<sub>q,k</sub>(x<sub>m</sub>, m) = R(m&theta;) &middot; W &middot; x<sub>m</sub></code><br>
+  where <code>R(m&theta;)</code> is the 2D rotation matrix <code>[cos m&theta;, -sin m&theta;; sin m&theta;, cos m&theta;]</code>
+</div>
+
+<p>The rotation means that the dot product between any two position-encoded vectors depends only on their relative distance, not their absolute positions. This gives the model a natural sense of distance between tokens without the rigid absolute position encodings that limit generalization to longer sequences.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_llama_model/page-07.png" alt="RoPE rotation matrix applied to Query and Key vectors at position m with angle m&theta;" loading="lazy">
+  <p class="caption">RoPE rotation matrix applied to Query and Key vectors at position m with angle m&theta;</p>
+</div>
+
+<hr />
+<h2 id="the-architecture-modified-transformer">The Architecture: Modified Transformer</h2>
+<p>LLaMA builds on the encoder-decoder transformer from "Attention Is All You Need" with the three modifications above baked in. The optimizer is AdamW. Beyond the architectural changes, the authors also apply several efficiency techniques: optimized multi-head attention to reduce memory usage and runtime, checkpointing activations (saving activations during the forward pass so they do not need to be recomputed during the backward pass), and model and sequence parallelism to reduce memory consumption across devices.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_llama_model/page-08.png" alt="LLaMA Encoder-Decoder architecture showing RMS Norm before Self-Attention, RMS Norm before Cross Attention, RMS Norm before Feed Forward, with RoPE embeddings at input" loading="lazy">
+  <p class="caption">LLaMA Encoder-Decoder architecture showing RMS Norm before Self-Attention, RMS Norm before Cross Attention, RMS Norm before Feed Forward, with RoPE embeddings at input</p>
+</div>
+
+<p>The pattern in each encoder or decoder block is: RMS Norm before every sub-layer (self-attention, cross-attention, feed-forward), with the SwiGLU activation inside the feed-forward network and RoPE applied to the attention queries and keys. Residual connections wrap each sub-layer as usual.</p>
+<hr />
+<h2 id="the-swiglu-feed-forward-network-in-detail">The SwiGLU Feed-Forward Network in Detail</h2>
+<div class="flow-diagram">
+<div style="text-align: center; margin-bottom: 0.75rem;">
+  <span style="font-size: 0.8rem; font-weight: 700; color: #c2410c;">SwiGLU Feed-Forward Network (3 weight matrices)</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: center;">
+  <div class="flow-steps">
+    <div class="flow-step norm">RMS Norm<span class="dim">y (128, 4096)</span></div>
+    <span class="flow-arrow">→</span>
+    <div style="display:flex;flex-direction:column;gap:0.3rem;">
+      <div class="flow-step ffn" style="font-size:0.68rem;">W<sub>1</sub>: Linear<span class="dim">(4096→11008)</span></div>
+      <div class="flow-step ffn" style="font-size:0.68rem;">W<sub>3</sub>: Linear<span class="dim">(4096→11008)</span></div>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step activation">SwiGLU<span class="dim">gate × input</span></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step ffn">W<sub>2</sub>: Linear<span class="dim">(11008→4096)</span></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step norm">+ Residual<span class="dim">(128, 4096)</span></div>
+  </div>
+</div>
+<p class="caption" style="text-align:center; margin-top: 0.75rem; font-size: 0.78rem; color: #a1a1aa;">Hidden dim = ⌈2/3 × 4 × 4096⌉<sub>256</sub> = 11008. The gated path (W<sub>3</sub>) controls information flow through the Swish activation.</p>
+</div>
+
+<p>This is where things get interesting from an implementation perspective. The feed-forward network in LLaMA is not your standard two-matrix FFN. Because SwiGLU requires a gating path, there are <strong>three weight matrices</strong> instead of two.</p>
+<p>Here are the dimensions for the base configuration (sequence length L = 128, embedding dimension Ed = 4096):</p>
+<p>The hidden dimension calculation is a detail worth memorizing:</p>
+<div class="math-block">
+  <code>hidden_dim = 2/3 &times; (4 &times; 4096) = 10922.7</code><br>
+  <code>&rarr; Round to nearest multiple of 256 = <strong>11008</strong></code>
+</div>
+
+<p>That factor of 2/3 is there specifically because SwiGLU adds a third weight matrix. Standard transformers use a hidden dimension of 4d (where d is the model dimension). SwiGLU's gating mechanism adds roughly 50% more parameters in the FFN, so the hidden dimension is scaled down by 2/3 to keep the total parameter count comparable. The rounding to a multiple of 256 is a hardware optimization -- it aligns matrix dimensions for efficient GPU computation.</p>
+<p>The feed-forward block works like this:</p>
+<ol>
+<li>The input y (shape L &times; Ed = 128 &times; 4096) goes through <strong>two parallel linear projections</strong>, both mapping from Ed to the hidden dimension Fl (4096 &rarr; 11008), using column parallelism.</li>
+<li>One path applies the <strong>SwiGLU activation</strong>. The other path passes through unchanged.</li>
+<li>The two paths are <strong>element-wise multiplied</strong> together -- this is the gating operation.</li>
+<li>The result passes through a final linear projection from Fl back to Ed (11008 &rarr; 4096), producing the output (128 &times; 4096).</li>
+</ol>
+<div class="diagram">
+  <img src="../images/details_of_the_llama_model/page-09.png" alt="Block diagram: Input &rarr; RMS Norm &rarr; two parallel Linear(4096, 11008) paths &rarr; SwiGLU on one path &rarr; element-wise multiply &rarr; Linear(11008, 4096) &rarr; output" loading="lazy">
+  <p class="caption">Block diagram: Input &rarr; RMS Norm &rarr; two parallel Linear(4096, 11008) paths &rarr; SwiGLU on one path &rarr; element-wise multiply &rarr; Linear(11008, 4096) &rarr; output</p>
+</div>
+
+<hr />
+<h2 id="weight-matrix-dimensions">Weight Matrix Dimensions</h2>
+<p>For the LLaMA-7B configuration with sequence length L = 128, embedding dimension Ed = 4096, 32 attention heads (h = 32), head dimension d = 128, and FFN hidden dimension Fl = 11008:</p>
+<p><strong>Input Embedding:</strong>
+- Shape: (batch_size, 128, 4096)
+- Per attention head: (batch_size, 128, 4096/32) = (batch_size, 128, 128, 32)</p>
+<p><strong>Self-Attention Weight Matrices (Wq, Wk, Wv, Wo):</strong>
+- All four: (batch_size, 4096, 4096)</p>
+<p><strong>Query, Key, Value Matrices:</strong>
+- Full: (batch_size, 128, 4096)
+- Per head: (batch_size, 128, 128, 32)</p>
+<p><strong>Feed-Forward Network (three weight matrices):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Matrix</th>
+<th>Shape</th>
+<th>Parallelism</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>First dense (gate path)</td>
+<td>(4096, 11008)</td>
+<td>Column parallel</td>
+</tr>
+<tr>
+<td>Third dense (input path)</td>
+<td>(4096, 11008)</td>
+<td>Column parallel</td>
+</tr>
+<tr>
+<td>Second dense (output)</td>
+<td>(11008, 4096)</td>
+<td>Row parallel</td>
+</tr>
+</tbody>
+</table>
+<p>The fact that there are three weight matrices in the FFN instead of the standard two is the direct consequence of the SwiGLU gating mechanism. The first and third matrices create the two parallel paths; the second matrix projects back to the model dimension.</p>
+<hr />
+<h2 id="full-computation-flow">Full Computation Flow</h2>
+<h3 id="encoder">Encoder</h3>
+<p>The encoder processes the full input sequence with the following flow (L = 128, Ed = 4096, h = 32, d = 128, Fl = 11008):</p>
+<ol>
+<li>Input X (L, Ed) passes through <strong>RMS Norm</strong>.</li>
+<li>Multi-head self-attention with RoPE on queries and keys. The attention is computed with optimized memory usage (column-parallel projections for Q, K, V).</li>
+<li><strong>Residual connection</strong> adds the attention output back to the input.</li>
+<li>The result passes through another <strong>RMS Norm</strong>.</li>
+<li>The SwiGLU feed-forward network: two column-parallel linear projections (4096 &rarr; 11008), SwiGLU gating, then a row-parallel projection (11008 &rarr; 4096).</li>
+<li><strong>Residual connection</strong> adds the FFN output back.</li>
+</ol>
+<div class="diagram">
+  <img src="../images/details_of_the_llama_model/page-11.png" alt="Computation diagram: Full LLaMA encoder flow from X(L,Ed) through RMS Norm, self-attention with RoPE, residual, RMS Norm, SwiGLU FFN with parallel linear paths, residual, to output" loading="lazy">
+  <p class="caption">Computation diagram: Full LLaMA encoder flow from X(L,Ed) through RMS Norm, self-attention with RoPE, residual, RMS Norm, SwiGLU FFN with parallel linear paths, residual, to output</p>
+</div>
+
+<h3 id="decoder">Decoder</h3>
+<p>The decoder adds masked self-attention and cross-attention, all with pre-normalization:</p>
+<ol>
+<li>Input passes through <strong>RMS Norm</strong> &rarr; <strong>Masked self-attention</strong> (causal mask prevents attending to future tokens) &rarr; residual connection.</li>
+<li>The result passes through <strong>RMS Norm</strong> &rarr; <strong>Cross-attention</strong> (queries come from the decoder output; keys and values come from the encoder hidden states) &rarr; residual connection.</li>
+<li>The result passes through <strong>RMS Norm</strong> &rarr; <strong>SwiGLU feed-forward network</strong> (same structure as the encoder FFN) &rarr; residual connection.</li>
+</ol>
+<div class="diagram">
+  <img src="../images/details_of_the_llama_model/page-12.png" alt="Computation diagram: Full LLaMA decoder flow with Masked Self-Attention, Cross Attention (Q from decoder, K/V from encoder), and SwiGLU FFN, all with RMS Norm pre-normalization" loading="lazy">
+  <p class="caption">Computation diagram: Full LLaMA decoder flow with Masked Self-Attention, Cross Attention (Q from decoder, K/V from encoder), and SwiGLU FFN, all with RMS Norm pre-normalization</p>
+</div>
+
+<hr />
+<h2 id="key-takeaways">Key Takeaways</h2>
+<p>Here is what I take away from the LLaMA architecture as a practitioner:</p>
+<ul>
+<li><strong>Data quality over model size.</strong> LLaMA demonstrated that state-of-the-art performance is achievable with publicly available data and smaller models. The 13B model competes with GPT-3 (175B) on most benchmarks. That is a 13x reduction in parameters.</li>
+<li><strong>Pre-normalization with RMSNorm</strong> is now the standard for training stability in large language models. It is simpler, faster, and more robust than post-norm Layer Norm. If you are building any new transformer, use pre-norm RMSNorm.</li>
+<li><strong>SwiGLU costs you a third weight matrix</strong> but buys you smoother gradients and better convergence. The 2/3 scaling of the hidden dimension (giving 11008 instead of 16384) keeps the parameter count in check while accommodating the gating mechanism.</li>
+<li><strong>RoPE is a strict upgrade over absolute positional embeddings.</strong> It naturally captures relative position and generalizes better to sequence lengths not seen during training.</li>
+<li><strong>Efficiency is a design priority, not an afterthought.</strong> Activation checkpointing, optimized attention, and model/sequence parallelism are baked into the architecture from the start. LLaMA is designed to be cheap to serve, not just cheap to train.</li>
+<li><strong>Open data matters.</strong> By training exclusively on public datasets, LLaMA enabled the entire open-source LLM ecosystem that followed -- Alpaca, Vicuna, and hundreds of derivatives. The architectural choices are important, but the open-data commitment is what made LLaMA transformative.</li>
+</ul>
+<hr />
+<p><em>This post is based on my presentation "Details of the LLaMA Model (Large Language Model Meta AI)" at Berkeley EECS. The original slides, including all architecture diagrams and computation flows, are available in <a href="../Presentations-main/Details_of_the_LLaMA_Model.pdf">Details_of_the_LLaMA_Model.pdf</a>.</em></p>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p><strong>Deep Learning from the Inside Out</strong></p>
+    <p style="margin-top: 0.35rem;"><a href="https://hivam.org/">Hiva Mohammadzadeh</a> &middot; Stanford MSCS &middot; UC Berkeley EECS</p>
+    <p style="margin-top: 0.35rem; font-size: 0.8rem;">Based on <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a> originally created in 2023</p>
+    <p style="margin-top: 0.5rem;"><a href="../index.html">Back to all posts</a></p>
+  </div>
+</footer>
+
+<script>
+// Reading progress bar
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const scrollTop = doc.scrollTop;
+  const scrollHeight = doc.scrollHeight - doc.clientHeight;
+  const progress = (scrollTop / scrollHeight) * 100;
+  document.getElementById('progressBar').style.width = progress + '%';
+  document.getElementById('header').classList.toggle('scrolled', scrollTop > 10);
+}, { passive: true });
+</script>
+
+</body>
+</html>

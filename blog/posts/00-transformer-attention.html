@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transformers and Attention: The Architecture That Changed Everything | Hiva Mohammadzadeh</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-mesh">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Reading progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<header class="site-header" id="header">
+  <div class="container-wide" style="max-width: 1140px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;">
+    <a href="../index.html" class="site-title">
+      <span class="logo-mark">DL</span>
+      Inside Out
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">All Posts</a>
+      
+      <a href="01-activation-functions.html">A Survey of Activation Functions &rarr;</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <article>
+    <h1 id="transformers-and-attention-the-architecture-that-changed-everything">Transformers and Attention: The Architecture That Changed Everything</h1>
+<p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
+<div class="tldr-box">
+
+**TL;DR:** The Transformer, introduced in the 2017 paper "Attention is All You Need," replaced recurrent and convolutional architectures with a purely attention-based model. The core idea: instead of processing tokens sequentially, use self-attention to let every token attend to every other token in parallel. This eliminated the sequential bottleneck of RNNs, made long-range dependencies trivial to capture, and enabled massive parallelism during training. The result was faster training, higher accuracy, and a single architecture that spawned BERT, GPT, T5, LLaMA, and essentially every major language model since. This post breaks down the architecture, the three attention patterns, and the three model families that emerged from it.
+
+</div>
+
+<hr />
+<h2 id="the-problem-with-rnns">The Problem with RNNs</h2>
+<p>Before the Transformer, the dominant paradigm for sequence modeling was the Recurrent Neural Network. RNNs process sequences one token at a time. The encoder takes the input sequence and a hidden state, produces the next hidden state, and passes it forward. The decoder takes that hidden state and generates output tokens one by one. This worked. RNNs could do machine translation, text summarization, and language modeling.</p>
+<p>But they had three fundamental problems that I kept running into during my work:</p>
+<ol>
+<li>
+<p><strong>Sequential processing is slow.</strong> Each token depends on the hidden state from the previous token. You cannot parallelize this. On modern GPUs designed for massive parallelism, this is a brutal bottleneck. Training a large RNN on a long sequence means waiting for each step to finish before starting the next.</p>
+</li>
+<li>
+<p><strong>Fixed processing order.</strong> The input sequence must be processed left to right (or right to left). You cannot skip around or attend selectively. The model sees "The" before it sees "cat" before it sees "sat." This rigid ordering limits how the model can reason about the input.</p>
+</li>
+<li>
+<p><strong>Long-range dependencies are extremely hard.</strong> The hidden state is a fixed-size vector that must carry all information from previous tokens. By the time you reach token 500, information about token 1 has been compressed and re-compressed through hundreds of nonlinear transformations. In practice, RNNs struggle to connect information that is more than a few dozen tokens apart. The vanishing gradient problem makes this worse -- gradients shrink exponentially as they backpropagate through time, so early tokens receive almost no learning signal.</p>
+</li>
+</ol>
+<p>The attention mechanism introduced in 2015 by Bahdanau et al. ("Neural machine translation by jointly learning to align and translate") was the first major fix. It allowed the decoder to look back at different parts of the source sentence at each decoding step, rather than relying on a single compressed vector. That was a significant improvement, but the underlying architecture was still recurrent. The sequential bottleneck remained.</p>
+<div class="key-insight">
+
+**The fundamental limitation:** RNNs compress the entire input into a fixed-length hidden state, then process it sequentially. No amount of attention bolted onto an RNN fully solves the parallelism problem.
+
+</div>
+
+<div class="flow-diagram">
+<div style="text-align: center; margin-bottom: 0.75rem;">
+  <span style="font-size: 0.85rem; font-weight: 700; color: #dc2626;">RNN: Sequential Processing</span>
+</div>
+<div class="flow-steps">
+  <div class="flow-step input">Token 1<span class="dim">h<sub>0</sub></span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step" style="background:#fee2e2;color:#991b1b;">h<sub>1</sub><span class="dim">wait...</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step input">Token 2<span class="dim">h<sub>1</sub></span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step" style="background:#fee2e2;color:#991b1b;">h<sub>2</sub><span class="dim">wait...</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step input">Token 3<span class="dim">h<sub>2</sub></span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step" style="background:#fee2e2;color:#991b1b;">h<sub>3</sub><span class="dim">wait...</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step" style="background:#fecaca;color:#7f1d1d;">...<span class="dim">O(n) steps</span></div>
+</div>
+<div style="text-align: center; margin: 1rem 0 0.75rem;">
+  <span style="font-size: 0.85rem; font-weight: 700; color: #059669;">Transformer: Parallel Processing</span>
+</div>
+<div class="flow-steps" style="justify-content: center;">
+  <div class="flow-step input">Token 1<span class="dim">attend all</span></div>
+  <div class="flow-step input">Token 2<span class="dim">attend all</span></div>
+  <div class="flow-step input">Token 3<span class="dim">attend all</span></div>
+  <div class="flow-step input">Token n<span class="dim">attend all</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step norm">All outputs<span class="dim">O(1) steps</span></div>
+</div>
+<p class="caption" style="text-align:center; margin-top: 0.75rem; font-size: 0.8rem; color: #a1a1aa;">RNNs must process tokens sequentially -- each step waits for the previous one. Transformers process all tokens in parallel via self-attention, reducing sequential steps from O(n) to O(1).</p>
+</div>
+
+<hr />
+<h2 id="enter-the-transformer">Enter the Transformer</h2>
+<p>In 2017, Vaswani et al. published "Attention is All You Need," and the title was not an exaggeration. They threw out recurrence entirely. No RNN cells. No convolutions. The entire model is built on attention mechanisms, feed-forward layers, and residual connections. That is it.</p>
+<p>The architecture consists of an encoder and a decoder, each made up of a stack of identical layers. The encoder layers have two sub-layers: a multi-head self-attention mechanism and a position-wise feed-forward network. The decoder layers have three sub-layers: masked multi-head self-attention, multi-head cross-attention over the encoder output, and a position-wise feed-forward network. Every sub-layer is wrapped in a residual connection followed by layer normalization.</p>
+<p>The results were immediate and decisive. On the WMT 2014 English-to-German translation task, the Transformer outperformed all previous models by more than 2.0 BLEU, and it did this in just 3.5 days of training. On English-to-French, it reduced training cost to one-quarter of the previous best while also improving the BLEU score. It achieved state-of-the-art perplexity on the One Billion Word Benchmark. It even outperformed existing models on English constituency parsing -- a task it was not specifically designed for and received no task-specific tuning.</p>
+<p>The Transformer was not an incremental improvement. It was a paradigm shift.</p>
+<hr />
+<h2 id="self-attention-the-core-innovation">Self-Attention: The Core Innovation</h2>
+<p>Self-attention is the mechanism that makes the Transformer work. The idea is straightforward: for each token in the sequence, compute how much it should attend to every other token in the sequence, then use those attention weights to create a weighted combination of all token representations.</p>
+<p>Here is how it works. Each token is projected into three vectors: a <strong>query</strong> (Q), a <strong>key</strong> (K), and a <strong>value</strong> (V). The attention score between two tokens is the dot product of the query of the first token and the key of the second token. These scores are scaled (divided by the square root of the key dimension) and passed through a softmax to get attention weights. The output for each token is the weighted sum of all value vectors, where the weights are the attention scores.</p>
+<div class="arch-diagram">
+<svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <rect width="720" height="320" fill="#fafaff" rx="12"/>
+  <text x="360" y="28" text-anchor="middle" font-size="14" font-weight="800" fill="#1e3a5f">Self-Attention: Query, Key, Value Mechanism</text>
+
+  <!-- Input tokens -->
+  <text x="60" y="70" text-anchor="middle" font-size="9" font-weight="700" fill="#6b7280">Input Tokens</text>
+  <rect x="20" y="80" width="80" height="30" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="60" y="100" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">The</text>
+  <rect x="20" y="118" width="80" height="30" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="60" y="138" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">cat</text>
+  <rect x="20" y="156" width="80" height="30" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="60" y="176" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">sat</text>
+
+  <!-- Projection arrows -->
+  <text x="170" y="62" text-anchor="middle" font-size="8" font-weight="700" fill="#7c3aed">Linear Projections</text>
+
+  <!-- Q K V columns -->
+  <rect x="130" y="80" width="55" height="30" rx="5" fill="#fae8ff" stroke="#d946ef" stroke-width="1.5"/>
+  <text x="157" y="100" text-anchor="middle" font-size="9" font-weight="800" fill="#a21caf">Q</text>
+  <rect x="192" y="80" width="55" height="30" rx="5" fill="#ecfdf5" stroke="#34d399" stroke-width="1.5"/>
+  <text x="219" y="100" text-anchor="middle" font-size="9" font-weight="800" fill="#047857">K</text>
+  <rect x="254" y="80" width="55" height="30" rx="5" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="281" y="100" text-anchor="middle" font-size="9" font-weight="800" fill="#92400e">V</text>
+
+  <rect x="130" y="118" width="55" height="30" rx="5" fill="#fae8ff" stroke="#d946ef" stroke-width="1.5"/>
+  <text x="157" y="138" text-anchor="middle" font-size="9" font-weight="800" fill="#a21caf">Q</text>
+  <rect x="192" y="118" width="55" height="30" rx="5" fill="#ecfdf5" stroke="#34d399" stroke-width="1.5"/>
+  <text x="219" y="138" text-anchor="middle" font-size="9" font-weight="800" fill="#047857">K</text>
+  <rect x="254" y="118" width="55" height="30" rx="5" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="281" y="138" text-anchor="middle" font-size="9" font-weight="800" fill="#92400e">V</text>
+
+  <rect x="130" y="156" width="55" height="30" rx="5" fill="#fae8ff" stroke="#d946ef" stroke-width="1.5"/>
+  <text x="157" y="176" text-anchor="middle" font-size="9" font-weight="800" fill="#a21caf">Q</text>
+  <rect x="192" y="156" width="55" height="30" rx="5" fill="#ecfdf5" stroke="#34d399" stroke-width="1.5"/>
+  <text x="219" y="176" text-anchor="middle" font-size="9" font-weight="800" fill="#047857">K</text>
+  <rect x="254" y="156" width="55" height="30" rx="5" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="281" y="176" text-anchor="middle" font-size="9" font-weight="800" fill="#92400e">V</text>
+
+  <!-- Arrows from input to QKV -->
+  <path d="M100 95 L127 95" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arw)"/>
+  <path d="M100 133 L127 133" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arw)"/>
+  <path d="M100 171 L127 171" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arw)"/>
+
+  <!-- Attention computation -->
+  <rect x="340" y="100" width="120" height="55" rx="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="400" y="121" text-anchor="middle" font-size="10" font-weight="800" fill="#6d28d9">Q x K&#x1D40;</text>
+  <text x="400" y="137" text-anchor="middle" font-size="9" font-weight="600" fill="#7c3aed">&#247; &#8730;d</text>
+  <text x="400" y="149" text-anchor="middle" font-size="8" fill="#8b5cf6">Softmax</text>
+
+  <!-- Arrows to attention -->
+  <path d="M185 95 L185 70 L335 70 L335 115 L337 115" stroke="#d946ef" stroke-width="1.2" fill="none" marker-end="url(#arw)"/>
+  <path d="M247 95 L247 60 L330 60 L330 130 L337 130" stroke="#34d399" stroke-width="1.2" fill="none" marker-end="url(#arw)"/>
+
+  <!-- Attention scores visualization -->
+  <rect x="345" y="170" width="24" height="24" rx="3" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="357" y="186" text-anchor="middle" font-size="7" font-weight="700" fill="#6d28d9">.8</text>
+  <rect x="373" y="170" width="24" height="24" rx="3" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="385" y="186" text-anchor="middle" font-size="7" font-weight="700" fill="#6d28d9">.1</text>
+  <rect x="401" y="170" width="24" height="24" rx="3" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="413" y="186" text-anchor="middle" font-size="7" font-weight="700" fill="#6d28d9">.1</text>
+  <text x="390" y="208" text-anchor="middle" font-size="7" fill="#a1a1aa">attention weights</text>
+
+  <!-- Multiply by V -->
+  <rect x="490" y="100" width="90" height="55" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="535" y="123" text-anchor="middle" font-size="10" font-weight="800" fill="#92400e">Scores</text>
+  <text x="535" y="140" text-anchor="middle" font-size="10" font-weight="800" fill="#92400e">x V</text>
+
+  <path d="M460 127 L487 127" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arw)"/>
+
+  <!-- Output -->
+  <rect x="610" y="105" width="90" height="45" rx="8" fill="#e0e7ff" stroke="#818cf8" stroke-width="2"/>
+  <text x="655" y="125" text-anchor="middle" font-size="9" font-weight="800" fill="#4338ca">Output</text>
+  <text x="655" y="140" text-anchor="middle" font-size="8" fill="#6366f1">context-aware</text>
+
+  <path d="M580 127 L607 127" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arw)"/>
+
+  <!-- Labels -->
+  <text x="400" y="240" text-anchor="middle" font-size="9" font-weight="600" fill="#6b7280">Attention(Q, K, V) = softmax(QK&#x1D40; / &#8730;d&#x2096;) V</text>
+
+  <!-- Bottom explanation boxes -->
+  <rect x="80" y="260" width="150" height="40" rx="6" fill="#fae8ff" stroke="#e879f9" stroke-width="1"/>
+  <text x="155" y="278" text-anchor="middle" font-size="8" font-weight="700" fill="#a21caf">Query: "What am I</text>
+  <text x="155" y="292" text-anchor="middle" font-size="8" font-weight="700" fill="#a21caf">looking for?"</text>
+
+  <rect x="270" y="260" width="150" height="40" rx="6" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1"/>
+  <text x="345" y="278" text-anchor="middle" font-size="8" font-weight="700" fill="#047857">Key: "What do</text>
+  <text x="345" y="292" text-anchor="middle" font-size="8" font-weight="700" fill="#047857">I contain?"</text>
+
+  <rect x="460" y="260" width="150" height="40" rx="6" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+  <text x="535" y="278" text-anchor="middle" font-size="8" font-weight="700" fill="#92400e">Value: "What info</text>
+  <text x="535" y="292" text-anchor="middle" font-size="8" font-weight="700" fill="#92400e">do I provide?"</text>
+
+  <defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+</svg>
+<p class="caption">The self-attention mechanism in detail. Each input token is projected into Query, Key, and Value vectors. The dot product of Q and K (scaled) produces attention weights via softmax. These weights determine how much each token's Value contributes to the output.</p>
+</div>
+
+<div class="key-insight">
+
+**The key intuition:** Queries ask "what am I looking for?" Keys answer "what do I contain?" Values carry "what information do I provide?" The dot product between query and key measures relevance. The weighted sum of values produces a context-aware representation.
+
+</div>
+
+<p>This solves all three RNN problems in one shot. First, there is no sequential dependency -- all attention scores can be computed in parallel across all positions. Second, there is no fixed processing order -- every token directly attends to every other token regardless of distance. Third, long-range dependencies are trivial -- a token at position 500 can attend directly to a token at position 1 with the same computational cost as attending to its neighbor. The information does not need to survive hundreds of compression steps.</p>
+<p>The model is trained using supervised learning with cross-entropy loss, same as you would train any sequence-to-sequence model. The difference is that the attention-based architecture makes training dramatically faster because the computation is parallelizable.</p>
+<hr />
+<h2 id="multi-head-attention">Multi-Head Attention</h2>
+<p>A single attention function computes one set of attention weights. But different parts of a sentence carry different types of relationships. The word "it" might need to attend to its antecedent for coreference, while simultaneously attending to a nearby verb for syntactic structure.</p>
+<p>Multi-head attention addresses this by running multiple attention functions in parallel. Each "head" has its own learned Q, K, and V projection matrices, so each head can learn to attend to different aspects of the input. One head might capture syntactic relationships. Another might capture semantic similarity. A third might focus on positional proximity.</p>
+<p>The outputs of all heads are concatenated and projected through a final linear layer. This gives the model the ability to attend to information at different levels of granularity simultaneously.</p>
+<p>In practice, multi-head attention is what gives Transformers their representational power. A single head would force the model to compress all types of relationships into one attention pattern. Multiple heads let it maintain separate, specialized attention patterns that are only combined at the output.</p>
+<hr />
+<h2 id="the-encoder-decoder-architecture">The Encoder-Decoder Architecture</h2>
+<p>The original Transformer uses an encoder-decoder structure, which builds on the seq2seq framework introduced by Sutskever et al. in 2014 ("Sequence to sequence learning with neural networks"). That original seq2seq model used two RNNs -- one to encode the input into a fixed-length vector, and another to decode that vector into the output. The major limitation was the fixed-length representation bottleneck.</p>
+<p>The Transformer encoder-decoder keeps the same high-level structure but replaces everything with attention. The encoder processes the full input sequence using bidirectional self-attention -- every token can attend to every other token. It produces a sequence of representations, one per input token.</p>
+<p>The decoder generates output tokens one at a time, using masked self-attention to ensure it can only attend to previously generated tokens (not future ones -- that would be cheating during training). It also uses cross-attention to attend to the encoder's output, allowing each generated token to look at the full input sequence when deciding what to output next.</p>
+<p>This architecture is natural for tasks where the input and output are different sequences -- machine translation, summarization, question answering. The encoder understands the input; the decoder produces the output conditioned on that understanding.</p>
+<hr />
+<h2 id="the-three-architecture-families">The Three Architecture Families</h2>
+<p>The original Transformer used both an encoder and a decoder. But researchers quickly discovered that you do not always need both. Three distinct architecture families emerged, each optimized for different tasks.</p>
+<div class="arch-diagram">
+<svg viewBox="0 0 750 300" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <rect width="750" height="300" fill="#fafaff" rx="12"/>
+  <text x="375" y="28" text-anchor="middle" font-size="14" font-weight="800" fill="#1e3a5f">The Three Transformer Architecture Families</text>
+
+  <!-- Encoder-Only -->
+  <rect x="20" y="50" width="220" height="230" rx="12" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+  <text x="130" y="74" text-anchor="middle" font-size="12" font-weight="800" fill="#1d4ed8">Encoder-Only</text>
+  <text x="130" y="90" text-anchor="middle" font-size="9" fill="#3b82f6">(BERT, RoBERTa)</text>
+
+  <rect x="50" y="210" width="160" height="28" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1"/>
+  <text x="130" y="229" text-anchor="middle" font-size="9" font-weight="600" fill="#1e40af">Full Input Sequence</text>
+
+  <rect x="55" y="160" width="150" height="34" rx="6" fill="#c7d2fe" stroke="#818cf8" stroke-width="1.5"/>
+  <text x="130" y="177" text-anchor="middle" font-size="9" font-weight="700" fill="#4338ca">Bidirectional</text>
+  <text x="130" y="189" text-anchor="middle" font-size="9" font-weight="700" fill="#4338ca">Self-Attention</text>
+
+  <rect x="55" y="108" width="150" height="34" rx="6" fill="#e0e7ff" stroke="#a5b4fc" stroke-width="1.5"/>
+  <text x="130" y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#3730a3">Fixed-Size</text>
+  <text x="130" y="137" text-anchor="middle" font-size="9" font-weight="700" fill="#3730a3">Representation</text>
+
+  <text x="130" y="260" text-anchor="middle" font-size="8" font-weight="600" fill="#6b7280">Classification, NER, QA</text>
+
+  <!-- Arrows -->
+  <path d="M130 210 L130 198" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#aw)"/>
+  <path d="M130 160 L130 146" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#aw)"/>
+
+  <!-- Decoder-Only -->
+  <rect x="265" y="50" width="220" height="230" rx="12" fill="#faf5ff" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="375" y="74" text-anchor="middle" font-size="12" font-weight="800" fill="#6d28d9">Decoder-Only</text>
+  <text x="375" y="90" text-anchor="middle" font-size="9" fill="#8b5cf6">(GPT-2, GPT-3, GPT-4)</text>
+
+  <rect x="295" y="210" width="160" height="28" rx="6" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="375" y="229" text-anchor="middle" font-size="9" font-weight="600" fill="#5b21b6">Tokens (one at a time)</text>
+
+  <rect x="300" y="160" width="150" height="34" rx="6" fill="#ddd6fe" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="375" y="177" text-anchor="middle" font-size="9" font-weight="700" fill="#6d28d9">Causal (Masked)</text>
+  <text x="375" y="189" text-anchor="middle" font-size="9" font-weight="700" fill="#6d28d9">Self-Attention</text>
+
+  <rect x="300" y="108" width="150" height="34" rx="6" fill="#e9d5ff" stroke="#c084fc" stroke-width="1.5"/>
+  <text x="375" y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#7c3aed">Next Token</text>
+  <text x="375" y="137" text-anchor="middle" font-size="9" font-weight="700" fill="#7c3aed">Generation</text>
+
+  <text x="375" y="260" text-anchor="middle" font-size="8" font-weight="600" fill="#6b7280">Text Generation, Code, Chat</text>
+
+  <path d="M375 210 L375 198" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#aw)"/>
+  <path d="M375 160 L375 146" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#aw)"/>
+
+  <!-- Encoder-Decoder -->
+  <rect x="510" y="50" width="220" height="230" rx="12" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+  <text x="620" y="74" text-anchor="middle" font-size="12" font-weight="800" fill="#047857">Encoder-Decoder</text>
+  <text x="620" y="90" text-anchor="middle" font-size="9" fill="#10b981">(T5, BART, Transformer)</text>
+
+  <rect x="530" y="210" width="72" height="28" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1"/>
+  <text x="566" y="229" text-anchor="middle" font-size="8" font-weight="600" fill="#047857">Encoder</text>
+  <rect x="608" y="210" width="72" height="28" rx="6" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+  <text x="644" y="229" text-anchor="middle" font-size="8" font-weight="600" fill="#92400e">Decoder</text>
+
+  <rect x="540" y="160" width="160" height="34" rx="6" fill="#a7f3d0" stroke="#34d399" stroke-width="1.5"/>
+  <text x="620" y="177" text-anchor="middle" font-size="9" font-weight="700" fill="#065f46">Cross-Attention</text>
+  <text x="620" y="189" text-anchor="middle" font-size="9" font-weight="700" fill="#065f46">Bridge</text>
+
+  <rect x="540" y="108" width="160" height="34" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+  <text x="620" y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#047857">Seq-to-Seq</text>
+  <text x="620" y="137" text-anchor="middle" font-size="9" font-weight="700" fill="#047857">Output</text>
+
+  <text x="620" y="260" text-anchor="middle" font-size="8" font-weight="600" fill="#6b7280">Translation, Summarization</text>
+
+  <path d="M620 210 L620 198" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#aw)"/>
+  <path d="M620 160 L620 146" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#aw)"/>
+
+  <!-- Arrow between encoder and decoder -->
+  <path d="M602 218 L608 218" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#aw-gold)"/>
+
+  <defs>
+    <marker id="aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="aw-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+</svg>
+<p class="caption">The three architecture families that emerged from the Transformer. Encoder-only (BERT) for understanding, Decoder-only (GPT) for generation, Encoder-Decoder (T5) for sequence-to-sequence tasks. Each uses attention differently.</p>
+</div>
+
+<h3 id="encoder-only-bert">Encoder-Only (BERT)</h3>
+<p>The encoder-only architecture takes an input sequence, passes it through the encoder stack, and produces a fixed-size representation (a latent vector). There is no decoder. The model does not generate text -- it produces representations.</p>
+<p>The attention is <strong>bidirectional</strong>: every token sees every other token, both before and after it. This gives the model full context in both directions, which is ideal for understanding tasks.</p>
+<p>BERT (2018) is the canonical encoder-only model. It was pre-trained using masked language modeling (predicting randomly masked tokens) and next sentence prediction. The result was a model that produces rich, context-aware representations that can be fine-tuned for classification, named entity recognition, sentiment analysis, and other understanding tasks.</p>
+<p>Encoder-only models are particularly useful when labeled data is limited. You pre-train on a large unsupervised corpus, then fine-tune on a small labeled dataset. RoBERTa, ELECTRA, and ALBERT are all encoder-only models that followed BERT.</p>
+<h3 id="decoder-only-gpt">Decoder-Only (GPT)</h3>
+<p>The decoder-only architecture takes an input and generates an output sequence token by token. There is no separate encoder. The attention is <strong>unidirectional</strong>: each token can only attend to tokens before it (and itself). This is called autoregressive generation -- the model predicts the next token given all previous tokens.</p>
+<p>GPT is the canonical decoder-only model. It generates variable-length output, one token at a time, making it natural for text generation, dialogue, code completion, and open-ended tasks.</p>
+<p>The key insight behind decoder-only models is that you do not need a separate encoder if the task is generation. The model learns to both understand the input and generate the output using the same stack of layers.</p>
+<h3 id="encoder-decoder-t5-bart">Encoder-Decoder (T5, BART)</h3>
+<p>The encoder-decoder architecture combines both components. The encoder processes the input into a fixed-size representation, and the decoder generates the output conditioned on that representation. This is the original Transformer architecture.</p>
+<p>It is the natural choice for tasks where the input and output are structurally different: machine translation (input in one language, output in another), image captioning (input is an image, output is text), and summarization (input is long text, output is short text).</p>
+<div class="key-insight">
+
+**How to choose:** Need to understand and classify? Encoder-only. Need to generate? Decoder-only. Need to transform one sequence into a different sequence? Encoder-decoder. In practice, decoder-only models have become dominant for general-purpose use because they can be scaled effectively and handle a wide range of tasks through prompting.
+
+</div>
+
+<hr />
+<h2 id="attention-patterns-forward-causal-and-triangle">Attention Patterns: Forward, Causal, and Triangle</h2>
+<p>Not all attention is created equal. The way you constrain which tokens can attend to which other tokens fundamentally changes what the model can do. Three patterns matter.</p>
+<h3 id="forward-attention-self-attention">Forward Attention (Self-Attention)</h3>
+<p>In forward attention, each query attends to all keys and values up to and including its current position. It can access the past and present, but not the future. This is the attention pattern used in language modeling, where the goal is to predict the next token given the preceding context.</p>
+<p>Forward attention gives the model access to all preceding context while preventing it from "seeing the answer" at future positions. It is the foundation of autoregressive generation.</p>
+<h3 id="causal-attention">Causal Attention</h3>
+<p>Causal attention is similar to forward attention but explicitly includes a mask that prevents each query from attending to keys and values after its current position. In practice, this is implemented as an upper-triangular mask applied to the attention scores before softmax -- setting future positions to negative infinity so they get zero attention weight after softmax.</p>
+<p>Causal attention is the standard pattern in decoder-only models like GPT. It ensures that generating token t depends only on tokens 1 through t-1, which is exactly the autoregressive property we need for text generation. The model generates one token at a time, and each token is produced without any knowledge of what comes after it.</p>
+<h3 id="triangle-attention">Triangle Attention</h3>
+<p>Triangle attention is a variant where each query only attends to a subset of keys and values, forming a triangular pattern defined by a maximum distance between query and key positions. Instead of attending to all previous tokens, a token at position t might only attend to tokens within some window around it.</p>
+<p>The purpose is efficiency. Full self-attention has O(n^2) complexity in the sequence length, which becomes prohibitive for very long sequences. Triangle attention reduces this cost while still capturing long-range dependencies -- the triangular pattern encourages the model to attend to positions that are further away, not just immediate neighbors.</p>
+<hr />
+<h2 id="the-impact-what-came-next">The Impact: What Came Next</h2>
+<p>The Transformer did not just improve machine translation. It created an entirely new paradigm.</p>
+<p>In 2018, BERT showed that bidirectional pre-training on large text corpora using the Transformer encoder produced representations that dominated every NLP benchmark. BERT was followed by RoBERTa (better pre-training recipe), ELECTRA (replaced masking with a discriminator), and ALBERT (parameter-efficient factorization).</p>
+<p>GPT (2018) and GPT-2 (2019) showed that decoder-only Transformers trained autoregressively on massive text corpora could generate remarkably coherent text. GPT-3 (2020) showed that scaling this approach to 175 billion parameters produced a model capable of few-shot learning across tasks it was never explicitly trained on.</p>
+<p>T5 (2020) unified all NLP tasks into a text-to-text framework using the full encoder-decoder architecture. BART combined denoising pre-training with the encoder-decoder structure for generation tasks.</p>
+<p>Then came the instruction-tuning era: InstructGPT, ChatGPT, LLaMA, and the models that brought large language models into mainstream use. Every one of them is a Transformer at its core. The architecture from the 2017 paper -- self-attention, multi-head attention, feed-forward layers, residual connections, layer normalization -- remains fundamentally unchanged. What has changed is scale, training data, and training methodology.</p>
+<div class="key-insight">
+
+**The 2017 paper's lasting contribution** is not any single technique. It is the demonstration that attention alone, without recurrence or convolution, is sufficient for state-of-the-art sequence modeling. That insight unlocked everything that followed.
+
+</div>
+
+<hr />
+<h2 id="key-takeaways">Key Takeaways</h2>
+<ol>
+<li>
+<p><strong>RNNs had three fatal flaws:</strong> sequential processing (slow), fixed order (rigid), and poor long-range dependencies (vanishing gradients). The Transformer fixes all three.</p>
+</li>
+<li>
+<p><strong>Self-attention is the core mechanism.</strong> Each token computes attention scores with every other token using queries, keys, and values. This enables parallel processing and direct long-range connections.</p>
+</li>
+<li>
+<p><strong>Multi-head attention</strong> lets the model attend to different types of relationships simultaneously -- syntactic, semantic, positional -- by running multiple attention functions in parallel.</p>
+</li>
+<li>
+<p><strong>Three architecture families</strong> emerged from the Transformer: encoder-only (BERT, for understanding), decoder-only (GPT, for generation), and encoder-decoder (T5, for sequence-to-sequence tasks).</p>
+</li>
+<li>
+<p><strong>Three attention patterns</strong> control what each token can see: forward attention (past and present), causal attention (masked future, used in autoregressive generation), and triangle attention (windowed subset, for efficiency).</p>
+</li>
+<li>
+<p><strong>The results were decisive.</strong> The original Transformer outperformed all existing models on translation by more than 2.0 BLEU, reduced training cost by 75%, and generalized to tasks it was not designed for.</p>
+</li>
+<li>
+<p><strong>Every major language model since 2017</strong> -- BERT, GPT, T5, LLaMA, and their descendants -- is a Transformer. The architecture has proven to be the foundation of modern NLP.</p>
+</li>
+</ol>
+<hr />
+<p><em>Based on my <a href="https://github.com/HivaMohammadzadeh1/SupervisedIndependentStud">CS199 Supervised Independent Study</a> at UC Berkeley and the original <a href="https://github.com/HivaMohammadzadeh1/Presentations">Presentations</a> I created in 2023.</em></p>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p><strong>Deep Learning from the Inside Out</strong></p>
+    <p style="margin-top: 0.35rem;"><a href="https://hivam.org/">Hiva Mohammadzadeh</a> &middot; Stanford MSCS &middot; UC Berkeley EECS</p>
+    <p style="margin-top: 0.35rem; font-size: 0.8rem;">Based on <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a> originally created in 2023</p>
+    <p style="margin-top: 0.5rem;"><a href="../index.html">Back to all posts</a></p>
+  </div>
+</footer>
+
+<script>
+// Reading progress bar
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const scrollTop = doc.scrollTop;
+  const scrollHeight = doc.scrollHeight - doc.clientHeight;
+  const progress = (scrollTop / scrollHeight) * 100;
+  document.getElementById('progressBar').style.width = progress + '%';
+  document.getElementById('header').classList.toggle('scrolled', scrollTop > 10);
+}, { passive: true });
+</script>
+
+</body>
+</html>

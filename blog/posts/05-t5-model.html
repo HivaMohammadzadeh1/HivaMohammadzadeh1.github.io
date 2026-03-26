@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Details of the T5 Model: Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer | Hiva Mohammadzadeh</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-mesh">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Reading progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<header class="site-header" id="header">
+  <div class="container-wide" style="max-width: 1140px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;">
+    <a href="../index.html" class="site-title">
+      <span class="logo-mark">DL</span>
+      Inside Out
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">All Posts</a>
+      <a href="04-gpt2-model.html">&larr; GPT-2 Internals</a>
+      <a href="06-llama-model.html">LLaMA's Efficiency Playbook &rarr;</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <article>
+    <h1 id="details-of-the-t5-model-exploring-the-limits-of-transfer-learning-with-a-unified-text-to-text-transformer">Details of the T5 Model: Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer</h1>
+<p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
+<div class="tldr-box">
+
+**TL;DR:** T5 reframes every NLP task -- translation, summarization, classification, question answering -- as a text-to-text problem. It uses a full encoder-decoder transformer with 12 blocks, pre-trained on C4 using span corruption and fine-tuned with task-specific text prefixes. The encoder uses bidirectional self-attention (like BERT), the decoder uses causal masked self-attention (like GPT-2), and cross-attention is the bridge that lets the decoder attend to the full encoded input. If you understand cross-attention, you understand what makes T5 different from encoder-only and decoder-only models.
+
+</div>
+
+<hr />
+<h2 id="t5s-big-idea-everything-is-text-to-text">T5's Big Idea: Everything is Text-to-Text</h2>
+<p>The core insight behind T5 is simple and powerful: every NLP task can be cast as taking some text as input and producing some text as output. Translation? Input English, output German. Sentiment analysis? Input a sentence, output "positive" or "negative." Grammaticality checking? Input a sentence, output "acceptable" or "not acceptable."</p>
+<div class="diagram">
+  <img src="../images/details_of_the_t5_model/page-04.png" alt="T5 text-to-text framework showing various task examples -- translation, CoLA, summarization, etc." loading="lazy">
+  <p class="caption">T5 text-to-text framework showing various task examples -- translation, CoLA, summarization, etc.</p>
+</div>
+
+<p>This unification is what makes T5 so flexible. Instead of designing separate output heads for each task -- a classification head here, a regression head there -- T5 uses a single architecture and a single training objective across everything. The task itself is specified as a text prefix prepended to the input. Feed in <code>"translate English to German: That is good."</code> and the model outputs <code>"Das ist gut."</code> Feed in <code>"cola sentence: The course is jumping well."</code> and it outputs <code>"not acceptable."</code> Same model, same weights, same decoder -- just different prefixes.</p>
+<p>T5 is a pre-trained deep learning model built on a text-to-text transformer. It is an encoder-decoder architecture, meaning it reads the entire input sequence at once (allowing the model to learn context from all surrounding words) and then generates output autoregressively. The base configuration consists of 12 transformer encoder-decoder blocks, with 128 input tokens, an embedding dimension of 768, 12 attention heads, and a feed-forward filter size of 3072.</p>
+<div class="arch-diagram">
+<svg viewBox="0 0 750 380" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <rect width="750" height="380" fill="#fafaff" rx="12"/>
+  <text x="375" y="28" text-anchor="middle" font-size="15" font-weight="800" fill="#1e3a5f">T5: Encoder-Decoder Architecture</text>
+
+  <!-- Encoder Side -->
+  <rect x="30" y="55" width="310" height="270" rx="14" fill="none" stroke="#059669" stroke-width="2"/>
+  <text x="185" y="75" text-anchor="middle" font-size="12" font-weight="800" fill="#059669">ENCODER</text>
+
+  <!-- Encoder Input -->
+  <rect x="60" y="280" width="250" height="32" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1"/>
+  <text x="185" y="301" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">Input: "translate English to German: ..."</text>
+
+  <!-- Encoder Self-Attn -->
+  <rect x="75" y="220" width="220" height="32" rx="6" fill="#fae8ff" stroke="#e879f9" stroke-width="1.5"/>
+  <text x="185" y="241" text-anchor="middle" font-size="10" font-weight="700" fill="#86198f">Self-Attention (bidirectional)</text>
+
+  <rect x="100" y="192" width="170" height="20" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="185" y="206" text-anchor="middle" font-size="8" font-weight="700" fill="#166534">Add &amp; Norm</text>
+
+  <!-- Encoder FFN -->
+  <rect x="75" y="155" width="220" height="28" rx="6" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="185" y="174" text-anchor="middle" font-size="10" font-weight="700" fill="#92400e">Feed-Forward + GELU</text>
+
+  <rect x="100" y="130" width="170" height="20" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="185" y="144" text-anchor="middle" font-size="8" font-weight="700" fill="#166534">Add &amp; Norm</text>
+
+  <rect x="125" y="95" width="120" height="26" rx="6" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1"/>
+  <text x="185" y="113" text-anchor="middle" font-size="9" font-weight="700" fill="#047857">Encoded (128, 768)</text>
+
+  <!-- Arrows -->
+  <path d="M185 280 L185 256" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ar)"/>
+  <path d="M185 220 L185 216" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ar)"/>
+  <path d="M185 192 L185 187" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ar)"/>
+  <path d="M185 155 L185 154" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ar)"/>
+
+  <!-- Decoder Side -->
+  <rect x="410" y="55" width="310" height="270" rx="14" fill="none" stroke="#7c3aed" stroke-width="2"/>
+  <text x="565" y="75" text-anchor="middle" font-size="12" font-weight="800" fill="#7c3aed">DECODER</text>
+
+  <!-- Decoder Input -->
+  <rect x="440" y="280" width="250" height="32" rx="6" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="565" y="301" text-anchor="middle" font-size="10" font-weight="600" fill="#5b21b6">Output: "Das ist gut." (shifted)</text>
+
+  <!-- Masked Self-Attn -->
+  <rect x="455" y="232" width="220" height="28" rx="6" fill="#fae8ff" stroke="#e879f9" stroke-width="1.5"/>
+  <text x="565" y="251" text-anchor="middle" font-size="9" font-weight="700" fill="#86198f">Masked Self-Attention (causal)</text>
+
+  <rect x="480" y="212" width="170" height="16" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="565" y="224" text-anchor="middle" font-size="7" font-weight="700" fill="#166534">Add &amp; Norm</text>
+
+  <!-- Cross-Attention - THE KEY PIECE -->
+  <rect x="440" y="170" width="240" height="34" rx="8" fill="#fef2f2" stroke="#f87171" stroke-width="2"/>
+  <text x="560" y="188" text-anchor="middle" font-size="10" font-weight="800" fill="#dc2626">Cross-Attention</text>
+  <text x="560" y="199" text-anchor="middle" font-size="7" fill="#ef4444">Q from decoder, K/V from encoder</text>
+
+  <rect x="480" y="148" width="170" height="16" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="565" y="160" text-anchor="middle" font-size="7" font-weight="700" fill="#166534">Add &amp; Norm</text>
+
+  <!-- Decoder FFN -->
+  <rect x="455" y="115" width="220" height="26" rx="6" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="565" y="133" text-anchor="middle" font-size="10" font-weight="700" fill="#92400e">Feed-Forward + GELU</text>
+
+  <rect x="480" y="92" width="170" height="16" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="565" y="104" text-anchor="middle" font-size="7" font-weight="700" fill="#166534">Add &amp; Norm</text>
+
+  <!-- Arrows decoder -->
+  <path d="M565 280 L565 264" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ar)"/>
+  <path d="M565 232 L565 232" stroke="#94a3b8" stroke-width="1.2"/>
+
+  <!-- Cross-attention bridge -->
+  <path d="M245 108 L340 108 L340 187 L436 187" stroke="#dc2626" stroke-width="2" fill="none" stroke-dasharray="5 3" marker-end="url(#ar-red)"/>
+  <text x="340" y="100" text-anchor="middle" font-size="8" font-weight="700" fill="#dc2626">K, V</text>
+
+  <!-- Output -->
+  <rect x="470" y="340" width="200" height="28" rx="6" fill="#e0e7ff" stroke="#a5b4fc" stroke-width="1"/>
+  <text x="570" y="359" text-anchor="middle" font-size="10" font-weight="700" fill="#3730a3">Softmax → Output Token</text>
+
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+</svg>
+<p class="caption">T5's encoder-decoder architecture. The red cross-attention bridge is the key innovation: the decoder's queries attend to the encoder's keys and values, connecting understanding with generation.</p>
+</div>
+
+<hr />
+<h2 id="training-span-corruption-and-prefix-conditioning">Training: Span Corruption and Prefix Conditioning</h2>
+<p>T5's training happens in two phases, and both are worth understanding.</p>
+<h3 id="pre-training-on-c4">Pre-Training on C4</h3>
+<p>T5 is pre-trained on C4 (Colossal Clean Crawled Corpus) using a span corruption objective. In the original text, words are masked out independently and uniformly at random, then replaced with unique sentinel tokens. The model is trained to predict those sentinel tokens and the missing text they represent. This is essentially a fill-in-the-blanks task: given a sentence with holes punched in it, reconstruct what was removed.</p>
+<p>This is different from BERT's masked language modeling in an important way. BERT masks individual tokens and predicts them independently. T5 masks contiguous spans and generates the missing content sequentially, which trains the decoder to produce coherent multi-token outputs from the start.</p>
+<h3 id="fine-tuning-with-prefix-conditioning">Fine-Tuning with Prefix Conditioning</h3>
+<p>Once pre-trained, T5 is fine-tuned on specific downstream tasks by converting every task into text-to-text format. Each task is specified using a text prefix that is prepended to the input before feeding it into the model. During fine-tuning, the model learns to generate output text that corresponds to the specified task, conditioned on both the input text and the task prefix. The prefix acts as a soft routing mechanism -- it tells the model what kind of transformation to apply without any architectural changes.</p>
+<hr />
+<h2 id="the-encoder-decoder-architecture">The Encoder-Decoder Architecture</h2>
+<p>T5 has two key ingredients: an input encoder and a task-specific decoder. This is what distinguishes it from BERT (encoder-only) and GPT-2 (decoder-only). The encoder reads the full input bidirectionally. The decoder generates the output one token at a time, left to right. And cross-attention connects them.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_t5_model/page-04.png" alt="Full T5 architecture -- stacked Encoder blocks (Self-Attention, Add & Norm, Feed Forward, Add & Norm) and Decoder blocks (Masked Self-Attention, Add & Norm, Encoder-Decoder Attention, Add & Norm, Feed Forward, Add & Norm) with Positional Encoding, Linear, and Softmax layers" loading="lazy">
+  <p class="caption">Full T5 architecture -- stacked Encoder blocks (Self-Attention, Add & Norm, Feed Forward, Add & Norm) and Decoder blocks (Masked Self-Attention, Add & Norm, Encoder-Decoder Attention, Add & Norm, Feed Forward, Add & Norm) with Positional Encoding, Linear, and Softmax layers</p>
+</div>
+
+<p>Each of the 12 encoder blocks has two sub-layers: a multi-head self-attention mechanism and a position-wise fully connected feed-forward network. Each decoder block has three sub-layers: masked self-attention, encoder-decoder cross-attention, and a feed-forward network. Every sub-layer has a residual connection followed by layer normalization.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_t5_model/page-05.png" alt="Encoder-Decoder block structure showing Encoder Blocks feeding Encoded Sequence to Decoder Blocks with Cross-Attention, Self-Attention, and Feed-Forward Network" loading="lazy">
+  <p class="caption">Encoder-Decoder block structure showing Encoder Blocks feeding Encoded Sequence to Decoder Blocks with Cross-Attention, Self-Attention, and Feed-Forward Network</p>
+</div>
+
+<p>I think of the encoder as the "understanding" half and the decoder as the "generating" half. The encoder builds a rich bidirectional representation of the input. The decoder uses that representation -- via cross-attention -- to produce the output. Neither half works alone in T5. This is the fundamental architectural difference from models like BERT (which only encodes) and GPT-2 (which only decodes).</p>
+<hr />
+<h2 id="encoder-self-attention">Encoder Self-Attention</h2>
+<p>The encoder uses standard multi-head self-attention with the following parameters: embedding dimension Ed = 768, sequence length L = 128, number of heads h = 12, and per-head dimension d = 768/12 = 64.</p>
+<p>The input embedding matrix X has shape (L, Ed) = (128, 768). It is projected into queries, keys, and values using weight matrices Wq, Wk, and Wv, each of shape (768, 768). The resulting Q, K, and V matrices have shape (128, 768), which are reshaped to (128, 64, 12) for parallel multi-head computation.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_t5_model/page-08.png" alt="Computation flow of encoder self-attention -- X(L,Ed) projected to Q,K,V, then Q*K^T, scaled by sqrt(d), Softmax, multiplied by V, concatenated heads, projected through Wo, residual connection, layer norm, producing output(128,768)" loading="lazy">
+  <p class="caption">Computation flow of encoder self-attention -- X(L,Ed) projected to Q,K,V, then Q*K^T, scaled by sqrt(d), Softmax, multiplied by V, concatenated heads, projected through Wo, residual connection, layer norm, producing output(128,768)</p>
+</div>
+
+<p>The attention computation follows the standard formula: Softmax(QK^T / sqrt(d)) * V. Each head computes its own attention scores independently, then the outputs from all 12 heads are concatenated and projected through an output weight matrix Wo of shape (768, 768). A residual connection adds the original input X back to the attention output, followed by layer normalization, producing the final output of shape (128, 768).</p>
+<p>The key point here is that encoder self-attention is fully bidirectional. Every token attends to every other token in the input. There is no masking. This is exactly like BERT's attention mechanism, and it is what gives the encoder its ability to build contextually rich representations of the entire input.</p>
+<hr />
+<h2 id="decoder-masked-self-attention">Decoder Masked Self-Attention</h2>
+<p>The decoder's self-attention looks structurally identical to the encoder's, but with one critical difference: it uses an attention mask.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_t5_model/page-10.png" alt="Computation flow of decoder masked self-attention with attention mask applied before Softmax" loading="lazy">
+  <p class="caption">Computation flow of decoder masked self-attention with attention mask applied before Softmax</p>
+</div>
+
+<p>The mask ensures that when generating the t-th output token, the decoder can only attend to tokens at positions 1 through t. Future tokens are masked out (set to negative infinity before the softmax, which drives their attention weights to zero). This is autoregressive generation -- exactly the same mechanism used in GPT-2.</p>
+<p>During training, the query at each position is the current token embedding, and the keys and values come from all tokens up to and including that position. During inference, when generating one token at a time, the query has shape (1, 768) representing the single current token, while the keys and values grow with each step as the generated sequence gets longer.</p>
+<p>The weight matrices are the same shape as in the encoder: Wq, Wk, Wv all (768, 768). The feed-forward output for a single generated token has shape (1, 768).</p>
+<hr />
+<h2 id="cross-attention-where-encoder-meets-decoder">Cross-Attention: Where Encoder Meets Decoder</h2>
+<div class="flow-diagram">
+<div style="text-align: center; margin-bottom: 0.75rem;">
+  <span style="font-size: 0.8rem; font-weight: 700; color: #dc2626;">Cross-Attention: Where Encoder Meets Decoder</span>
+</div>
+<div class="flow-steps">
+  <div class="flow-step" style="background:#ecfdf5;color:#047857;">Encoder Output<span class="dim">(128, 768)</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step attention">W<sub>K</sub>, W<sub>V</sub><span class="dim">→ K, V</span></div>
+  <span class="flow-arrow" style="font-size:1.5rem;">⤵</span>
+</div>
+<div class="flow-steps" style="margin-top: 0.5rem;">
+  <div class="flow-step" style="background:#ede9fe;color:#5b21b6;">Decoder State<span class="dim">(1, 768)</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step attention">W<sub>Q</sub><span class="dim">→ Q</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step attention">Q × K<sup>T</sup><span class="dim">scores</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step attention">Softmax × V<span class="dim">(1, 768)</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step output">Output<span class="dim">+ residual</span></div>
+</div>
+<p class="caption" style="text-align:center; margin-top: 0.75rem; font-size: 0.8rem; color: #a1a1aa;">Q comes from the decoder, K and V come from the encoder. This is how the decoder "reads" the encoded input.</p>
+</div>
+
+<p>This is the piece that makes T5 fundamentally different from both BERT and GPT-2. Cross-attention (also called encoder-decoder attention) is the mechanism that allows the decoder to look at the encoder's output while generating each token.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_t5_model/page-12.png" alt="Cross-attention computation -- Query from decoder input X(L,Ed) with Wq, Key and Value from encoder hidden states X_encoder(L,Ed) with Wk and Wv, showing the full attention computation flow" loading="lazy">
+  <p class="caption">Cross-attention computation -- Query from decoder input X(L,Ed) with Wq, Key and Value from encoder hidden states X_encoder(L,Ed) with Wk and Wv, showing the full attention computation flow</p>
+</div>
+
+<p>Here is how it works. The query comes from the decoder: the current decoder hidden state is projected through Wq. But the key and value come from the encoder: the encoder's output hidden states are projected through Wk and Wv. So when the decoder computes attention scores (Q * K^T), it is measuring how relevant each encoded input token is to the current decoder state. The softmax over these scores produces a weighted combination of the encoder's value vectors, which is then used by the decoder to generate the next output token.</p>
+<div class="key-insight">
+  <strong>Key insight:</strong> In cross-attention, Q comes from the decoder, but K and V come from the encoder. This is what lets the decoder "look back" at the full encoded input while generating each output token. It is the bridge between understanding (encoder) and generation (decoder).
+</div>
+
+<p>The dimensions are consistent with the rest of the model: Ed = 768, L = 128, h = 12, d = 64. The weight matrices Wq, Wk, Wv are each (768, 768). The attention output passes through Wo (768, 768), gets a residual connection, and then layer normalization, producing the final output of shape (128, 768).</p>
+<p>Cross-attention is why T5 can handle tasks where the output is a complex function of the input. In translation, the decoder needs to know what the source sentence said. In summarization, it needs to selectively attend to the most important parts of the input. In question answering, it needs to focus on the passage regions relevant to the question. Without cross-attention, the decoder would be generating output blind to the input -- it would be just another language model.</p>
+<hr />
+<h2 id="the-feed-forward-networks">The Feed-Forward Networks</h2>
+<p>Every block in both the encoder and decoder includes a position-wise feed-forward network (FFN). The structure is the same everywhere: two dense layers with a GELU activation in between.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_t5_model/page-09.png" alt="FFN computation -- y(L,Ed) through Linear(Ed,Fl), GELU, Linear(Fl,Ed), residual connection, layer norm, producing output(128,768)" loading="lazy">
+  <p class="caption">FFN computation -- y(L,Ed) through Linear(Ed,Fl), GELU, Linear(Fl,Ed), residual connection, layer norm, producing output(128,768)</p>
+</div>
+
+<p>The first linear layer expands from embedding dimension to filter size: (768, 3072). The GELU activation introduces nonlinearity. The second linear layer projects back down: (3072, 768). A residual connection adds the FFN input back to the output, followed by layer normalization.</p>
+<p>This is the same FFN design used in GPT-2 and BERT. It is applied independently to each position in the sequence, which is why it is called "position-wise." The expansion to 3072 (4x the embedding dimension) gives the network extra capacity to learn complex transformations at each position before compressing back to the original dimension.</p>
+<p>In the encoder, the FFN output has shape (128, 768). In the decoder, when generating one token at a time during inference, the output is (1, 768).</p>
+<hr />
+<h2 id="weight-matrix-dimensions-at-a-glance">Weight Matrix Dimensions at a Glance</h2>
+<p>Here is a consolidated reference for the key weight matrix dimensions in T5-base:</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Matrix</th>
+<th>Dimensions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Input embedding</strong></td>
+<td>Embedding</td>
+<td>(batch_size, 128, 768)</td>
+</tr>
+<tr>
+<td><strong>Per-head view</strong></td>
+<td>Reshaped</td>
+<td>(batch_size, 128, 64, 12)</td>
+</tr>
+<tr>
+<td><strong>Encoder self-attn</strong></td>
+<td>Wq, Wk, Wv</td>
+<td>(768, 768) each</td>
+</tr>
+<tr>
+<td><strong>Encoder self-attn</strong></td>
+<td>Q, K, V</td>
+<td>(batch_size, 128, 768)</td>
+</tr>
+<tr>
+<td><strong>Decoder masked self-attn</strong></td>
+<td>Wq, Wk, Wv</td>
+<td>(768, 768) each</td>
+</tr>
+<tr>
+<td><strong>Decoder self-attn (inference)</strong></td>
+<td>Q</td>
+<td>(batch_size, 1, 768)</td>
+</tr>
+<tr>
+<td><strong>Decoder self-attn (inference)</strong></td>
+<td>K, V</td>
+<td>(batch_size, seq_len, 768)</td>
+</tr>
+<tr>
+<td><strong>Cross-attention</strong></td>
+<td>Wq (from decoder), Wk/Wv (from encoder)</td>
+<td>(768, 768) each</td>
+</tr>
+<tr>
+<td><strong>Feed-forward (all blocks)</strong></td>
+<td>Dense 1</td>
+<td>(768, 3072)</td>
+</tr>
+<tr>
+<td><strong>Feed-forward (all blocks)</strong></td>
+<td>Dense 2</td>
+<td>(3072, 768)</td>
+</tr>
+<tr>
+<td><strong>Output projection</strong></td>
+<td>Wo</td>
+<td>(768, 768)</td>
+</tr>
+</tbody>
+</table>
+<p>All attention weight matrices share the same (768, 768) shape. The difference between encoder attention, decoder masked attention, and cross-attention is not in the weight shapes -- it is in where the inputs come from and whether masking is applied.</p>
+<hr />
+<h2 id="context-where-t5-fits-in-the-evolution">Context: Where T5 Fits in the Evolution</h2>
+<p>T5 represents the encoder-decoder approach at its best, but it is important to understand where it sits relative to the other two architecture families I have surveyed.</p>
+<div class="diagram">
+  <img src="../images/cs199/page-04.png" alt="Encoder-Decoder architecture visualization showing encoder passing state to decoder" loading="lazy">
+  <p class="caption">The encoder-decoder paradigm: the encoder processes the full input and passes a state representation to the decoder, which generates output autoregressively. From my CS199 independent study.</p>
+</div>
+
+<p>In my independent study, I compared the three architecture types head-to-head:</p>
+<ol>
+<li>
+<p><strong>Encoder-only (BERT)</strong>: Produces fixed-size representations. Bidirectional. Best for understanding tasks -- classification, NER, question answering where the full input must be comprehended before producing output.</p>
+</li>
+<li>
+<p><strong>Decoder-only (GPT-2/3/4)</strong>: Generates variable-length output autoregressively. Unidirectional. Best for generation tasks or when the input data distribution is open-ended.</p>
+</li>
+<li>
+<p><strong>Encoder-Decoder (T5)</strong>: Combines both. The encoder reads the full input bidirectionally, the decoder generates output autoregressively with access to the encoder's representations via cross-attention. Best for sequence-to-sequence tasks -- translation, summarization, and any task where input and output have different lengths or meanings.</p>
+</li>
+</ol>
+<p>T5's key insight was that you do not need separate architectures for different tasks. By framing everything as text-to-text with prefix conditioning, a single encoder-decoder model handles classification, regression, translation, and summarization identically.</p>
+<h3 id="palm-scaling-the-decoder-path">PaLM: Scaling the Decoder Path</h3>
+<p>While T5 proved the power of encoder-decoder models, Google's PaLM (Pathways Language Model) took a different approach: a 540-billion parameter, dense decoder-only Transformer. PaLM uses parallel layers to speed up training and multi-query attention to speed up inference. It achieved state-of-the-art few-shot performance on hundreds of benchmarks, demonstrating that at sufficient scale, decoder-only models can match or exceed encoder-decoder performance even on understanding tasks.</p>
+<p>This does not diminish T5's contribution -- it shows that the encoder-decoder architecture provides strong performance at smaller scales, which matters for practical deployment.</p>
+<p><em>This section draws from my <a href="https://github.com/HivaMohammadzadeh1/SupervisedIndependentStud">CS199 Supervised Independent Study</a> at UC Berkeley.</em></p>
+<hr />
+<h2 id="key-takeaways">Key Takeaways</h2>
+<p>T5 is a synthesis. It takes the best ideas from encoder-only models (BERT) and decoder-only models (GPT-2) and combines them into a single encoder-decoder architecture.</p>
+<ul>
+<li><strong>From BERT, it gets bidirectional encoding.</strong> The encoder reads the full input with no masking, building rich contextual representations where every token can attend to every other token.</li>
+<li><strong>From GPT-2, it gets autoregressive decoding.</strong> The decoder generates output left to right, using masked self-attention to ensure causal generation.</li>
+<li><strong>Cross-attention is the glue.</strong> It is the mechanism that neither BERT nor GPT-2 has on its own. Cross-attention lets the decoder condition its generation on the full encoded input, which is essential for tasks where the output depends heavily on understanding the input.</li>
+</ul>
+<p>The text-to-text framing is what makes T5 practical. By converting every task to the same input/output format and using prefix conditioning, a single model and a single training pipeline can handle translation, classification, summarization, and question answering. No task-specific heads, no architectural modifications -- just different prefixes.</p>
+<p>When I work with T5, I find that understanding the three types of attention is the key to understanding the whole model. Encoder self-attention gives you context. Decoder masked self-attention gives you generation. Cross-attention gives you the connection between the two. Everything else -- the FFNs, the residual connections, the layer norms -- is shared infrastructure. Get the attention right, and you get T5.</p>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p><strong>Deep Learning from the Inside Out</strong></p>
+    <p style="margin-top: 0.35rem;"><a href="https://hivam.org/">Hiva Mohammadzadeh</a> &middot; Stanford MSCS &middot; UC Berkeley EECS</p>
+    <p style="margin-top: 0.35rem; font-size: 0.8rem;">Based on <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a> originally created in 2023</p>
+    <p style="margin-top: 0.5rem;"><a href="../index.html">Back to all posts</a></p>
+  </div>
+</footer>
+
+<script>
+// Reading progress bar
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const scrollTop = doc.scrollTop;
+  const scrollHeight = doc.scrollHeight - doc.clientHeight;
+  const progress = (scrollTop / scrollHeight) * 100;
+  document.getElementById('progressBar').style.width = progress + '%';
+  document.getElementById('header').classList.toggle('scrolled', scrollTop > 10);
+}, { passive: true });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Details of the BERT Model | Hiva Mohammadzadeh</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-mesh">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Reading progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<header class="site-header" id="header">
+  <div class="container-wide" style="max-width: 1140px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;">
+    <a href="../index.html" class="site-title">
+      <span class="logo-mark">DL</span>
+      Inside Out
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">All Posts</a>
+      <a href="02-normalization-techniques.html">&larr; Normalization Techniques</a>
+      <a href="04-gpt2-model.html">GPT-2 Internals &rarr;</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <article>
+    <h1 id="details-of-the-bert-model">Details of the BERT Model</h1>
+<p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
+<div class="tldr-box">
+
+**TL;DR:** BERT is a pre-trained, encoder-only transformer that reads text bidirectionally -- it sees the full context around every token at once. The base model stacks 12 transformer blocks, each with multi-head self-attention and a position-wise feed-forward network, operating on 128 tokens with a 768-dimensional embedding. Training happens in two phases: masked language modeling (MLM) and next sentence prediction (NSP) for pre-training, then task-specific fine-tuning. A single transformer block runs about 1.86 billion FLOPs, dominated by the feed-forward network. Understanding these dimensions and computations is the key to reasoning about BERT's cost and behavior.
+
+</div>
+
+<hr />
+<h2 id="what-makes-bert-different">What Makes BERT Different</h2>
+<p>BERT stands for Bidirectional Encoder Representations from Transformers, and the word that matters most in that name is <em>bidirectional</em>. Before BERT, most language models read text left-to-right (or right-to-left). BERT reads the entire sequence at once. That means when the model processes a token, it has access to every token to its left <em>and</em> every token to its right. The context is complete.</p>
+<p>BERT is an encoder-only model. It does not have the decoder stack you see in GPT-style architectures. There is no autoregressive generation here -- the entire input is processed in parallel. This design choice is what makes BERT so effective for understanding tasks: classification, named entity recognition, question answering, and anything else where you need to comprehend the full input before producing an output.</p>
+<p>The base configuration I work with uses 128 tokens as the sequence length, an embedding dimension of 768, 12 attention heads, and a feed-forward filter size of 3072. The model consists of 12 stacked transformer encoder blocks, each containing two sub-layers: a multi-head self-attention mechanism and a position-wise fully connected feed-forward network.</p>
+<div class="arch-diagram">
+<svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <!-- Background -->
+  <rect width="700" height="420" fill="#fafaff" rx="12"/>
+
+  <!-- Title -->
+  <text x="350" y="32" text-anchor="middle" font-size="16" font-weight="800" fill="#1e3a5f">BERT: Encoder-Only Architecture</text>
+
+  <!-- Input -->
+  <rect x="225" y="360" width="250" height="40" rx="8" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="350" y="385" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af">Token Input (128 tokens)</text>
+
+  <!-- Embedding -->
+  <rect x="225" y="300" width="250" height="36" rx="8" fill="#e0e7ff" stroke="#a5b4fc" stroke-width="1.5"/>
+  <text x="350" y="323" text-anchor="middle" font-size="11" font-weight="600" fill="#3730a3">Token + Position Embeddings (128, 768)</text>
+
+  <!-- Arrow -->
+  <path d="M350 360 L350 340" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Encoder Block -->
+  <rect x="175" y="110" width="350" height="175" rx="12" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="6 3"/>
+  <text x="540" y="135" font-size="10" font-weight="700" fill="#6366f1">x12 Blocks</text>
+
+  <!-- Self-Attention -->
+  <rect x="200" y="215" width="300" height="38" rx="8" fill="#fae8ff" stroke="#e879f9" stroke-width="1.5"/>
+  <text x="350" y="239" text-anchor="middle" font-size="11" font-weight="700" fill="#86198f">Multi-Head Self-Attention (12 heads, d=64)</text>
+
+  <!-- Add & Norm 1 -->
+  <rect x="250" y="175" width="200" height="28" rx="6" fill="#dcfce7" stroke="#86efac" stroke-width="1.5"/>
+  <text x="350" y="194" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">Add &amp; Layer Norm</text>
+
+  <!-- FFN -->
+  <rect x="200" y="135" width="300" height="32" rx="8" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="350" y="156" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e">Feed-Forward Network (768 → 3072 → 768) + GELU</text>
+
+  <!-- Add & Norm 2 -->
+  <rect x="250" y="115" width="200" height="16" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="350" y="126" text-anchor="middle" font-size="8" font-weight="700" fill="#166534">Add &amp; Layer Norm</text>
+
+  <!-- Arrows inside -->
+  <path d="M350 300 L350 257" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M350 215 L350 207" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M350 175 L350 170" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Output -->
+  <rect x="225" y="55" width="250" height="40" rx="8" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="350" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="#1e40af">Hidden States (128, 768)</text>
+  <text x="350" y="86" text-anchor="middle" font-size="9" fill="#6b7280">[CLS] token → classification head</text>
+
+  <path d="M350 110 L350 99" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Residual connection indicators -->
+  <path d="M190 240 L190 180 L195 180" stroke="#10b981" stroke-width="1" stroke-dasharray="3 2" fill="none"/>
+  <text x="178" y="210" font-size="7" fill="#10b981" transform="rotate(-90, 178, 210)">residual</text>
+
+  <!-- Arrow marker -->
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+</svg>
+<p class="caption">BERT stacks 12 identical encoder blocks. Each block: self-attention → add &amp; norm → FFN → add &amp; norm. Bidirectional: every token attends to every other token.</p>
+</div>
+
+<hr />
+<h2 id="training-masked-language-modeling-and-next-sentence-prediction">Training: Masked Language Modeling and Next Sentence Prediction</h2>
+<p>BERT's training happens in two distinct phases.</p>
+<h3 id="pre-training">Pre-Training</h3>
+<p>The model is pre-trained on large, diverse text corpora using an unsupervised learning approach. Two objectives drive this phase:</p>
+<ul>
+<li><strong>Masked Language Modeling (MLM):</strong> Some percentage of the input tokens are replaced with a special <code>[MASK]</code> token, and the model is trained to predict the original token. This forces the model to learn deep bidirectional representations -- it cannot just memorize a left-to-right pattern because the masked token could be anywhere.</li>
+<li><strong>Next Sentence Prediction (NSP):</strong> The model receives pairs of sentences and must predict whether the second sentence actually follows the first in the original text, or whether it is a random sentence. This teaches the model to understand relationships between sentences, which matters for downstream tasks like question answering and natural language inference.</li>
+</ul>
+<h3 id="fine-tuning">Fine-Tuning</h3>
+<p>After pre-training, you fine-tune BERT on your specific downstream task by adding a task-specific output layer. The pre-trained weights give the model a strong starting point, and the fine-tuning phase adapts those representations to your particular problem. This is what makes BERT so practical -- the expensive pre-training happens once, and fine-tuning is comparatively cheap.</p>
+<hr />
+<h2 id="the-architecture">The Architecture</h2>
+<p>BERT's architecture has two key ingredients: the transformer encoder stack and the task-specific output layer on top.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_bert_model/page-04.png" alt="Encoder-Only Architecture with stacked Encoder Blocks, each containing Feed Forward Neural Network and Self-Attention, with Token Input at bottom and Token Output at top" loading="lazy">
+  <p class="caption">Encoder-Only Architecture with stacked Encoder Blocks, each containing Feed Forward Neural Network and Self-Attention, with Token Input at bottom and Token Output at top</p>
+</div>
+
+<p>Each encoder block follows the same pattern: self-attention, followed by a residual connection and layer normalization, followed by a feed-forward network, followed by another residual connection and layer normalization. This pattern repeats 12 times. The output of the final block feeds into whatever task-specific head you have added for fine-tuning.</p>
+<hr />
+<h2 id="inside-the-transformer-encoder">Inside the Transformer Encoder</h2>
+<p>Each transformer encoder block has two main components: the attention mechanism and the feed-forward network. But the supporting cast -- residual connections, layer normalization, and the choice of activation function -- is just as important for making the model actually trainable.</p>
+<ul>
+<li><strong>Self-attention</strong> allows the model to attend to different parts of the input sequence. Every token can look at every other token and decide how much to weight each one.</li>
+<li><strong>The feed-forward network (FFN)</strong> processes the output of the normalization layer in a way that better fits it to the next attention layer. It applies a nonlinear transformation independently to each position.</li>
+<li><strong>Residual connections</strong> are used around both sub-layers to avoid the vanishing gradient problem. The input to each sub-layer is added to its output before normalization.</li>
+<li><strong>Layer normalization</strong> improves convergence speed by normalizing activations across the feature dimension.</li>
+<li><strong>GELU</strong> is the nonlinearity used in the feed-forward layers. It has been found to perform better than ReLU and other activation functions in transformer architectures -- the smoothness of its gradient is a real advantage during training.</li>
+</ul>
+<hr />
+<h2 id="dimensions-of-the-weight-matrices">Dimensions of the Weight Matrices</h2>
+<p>Getting the dimensions right is where a lot of confusion lives, so I want to lay these out precisely.</p>
+<h3 id="input-embedding">Input Embedding</h3>
+<p>The input embedding matrix has shape:</p>
+<div class="math-block">
+  (batch_size, sequence_length, embedding_size) = (batch_size, 128, 768)
+</div>
+
+<p>For parallel attention heads, this gets reshaped to:</p>
+<div class="math-block">
+  (batch_size, 128, 768/12 heads) = (batch_size, 128, 64, 12)
+</div>
+
+<h3 id="self-attention-weight-matrices-wq-wk-wv-wo">Self-Attention Weight Matrices (W<sub>q</sub>, W<sub>k</sub>, W<sub>v</sub>, W<sub>o</sub>)</h3>
+<p>Each projection weight matrix is:</p>
+<table>
+<thead>
+<tr>
+<th>Matrix</th>
+<th>Shape</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>W<sub>q</sub></strong> (Query)</td>
+<td>(batch_size, 768, 768)</td>
+</tr>
+<tr>
+<td><strong>W<sub>k</sub></strong> (Key)</td>
+<td>(batch_size, 768, 768)</td>
+</tr>
+<tr>
+<td><strong>W<sub>v</sub></strong> (Value)</td>
+<td>(batch_size, 768, 768)</td>
+</tr>
+<tr>
+<td><strong>W<sub>o</sub></strong> (Output)</td>
+<td>(batch_size, 768, 768)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="projected-q-k-v-matrices">Projected Q, K, V Matrices</h3>
+<p>After multiplying the input embeddings by the weight matrices:</p>
+<table>
+<thead>
+<tr>
+<th>Matrix</th>
+<th>Full Shape</th>
+<th>Per-Head Shape</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Q</strong> (Query)</td>
+<td>(batch_size, 128, 768)</td>
+<td>(batch_size, 128, 64, 12)</td>
+</tr>
+<tr>
+<td><strong>K</strong> (Key)</td>
+<td>(batch_size, 128, 768)</td>
+<td>(batch_size, 128, 64, 12)</td>
+</tr>
+<tr>
+<td><strong>V</strong> (Value)</td>
+<td>(batch_size, 128, 768)</td>
+<td>(batch_size, 128, 64, 12)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="feed-forward-network-weights">Feed-Forward Network Weights</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Shape</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>First dense layer</td>
+<td>(768, 3072)</td>
+</tr>
+<tr>
+<td>Second dense layer</td>
+<td>(3072, 768)</td>
+</tr>
+</tbody>
+</table>
+<p>The FFN expands the representation from 768 to 3072 (a 4x expansion), applies GELU, then projects it back down to 768. This expand-then-compress pattern is standard in transformer architectures.</p>
+<hr />
+<h2 id="computation-diagram-the-attention-block">Computation Diagram: The Attention Block</h2>
+<div class="flow-diagram">
+<div class="flow-steps">
+  <div class="flow-step input">X<span class="dim">(128, 768)</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step attention">W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub><span class="dim">(768, 768)</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step attention">Q, K, V<span class="dim">(128, 64, 12)</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step attention">QK<sup>T</sup>/√d<span class="dim">(128, 128, 12)</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step attention">Softmax<span class="dim">scores</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step attention">× V<span class="dim">(128, 64, 12)</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step output">Concat + W<sub>O</sub><span class="dim">(128, 768)</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-step norm">+ Residual<span class="dim">LayerNorm</span></div>
+</div>
+<p class="caption" style="text-align:center; margin-top: 0.75rem; font-size: 0.8rem; color: #a1a1aa;">Data flow through one BERT attention head with tensor shapes at each step</p>
+</div>
+
+<p>Here is the full computation flow through the multi-head self-attention mechanism, using the notation E<sub>d</sub> = 768, L = 128, h = 12, d = E<sub>d</sub>/h = 64:</p>
+<div class="diagram">
+  <img src="../images/details_of_the_bert_model/page-07.png" alt="Multi-head Self-Attention computation flow showing X(L, Ed) through Wq, Wk, Wv projections, scaled dot-product attention, concatenation, and output projection with residual connection and layer norm" loading="lazy">
+  <p class="caption">Multi-head Self-Attention computation flow showing X(L, E<sub>d</sub>) through W<sub>q</sub>, W<sub>k</sub>, W<sub>v</sub> projections, scaled dot-product attention, concatenation, and output projection with residual connection and layer norm</p>
+</div>
+
+<p>The step-by-step data flow:</p>
+<ol>
+<li><strong>Input:</strong> X with shape (L, E<sub>d</sub>) = (128, 768)</li>
+<li><strong>Project:</strong> Multiply by W<sub>q</sub>(E<sub>d</sub>, d, h), W<sub>k</sub>(E<sub>d</sub>, d, h), W<sub>v</sub>(E<sub>d</sub>, d, h) to get Q(L, d, h), K(L, d, h), V(L, d, h)</li>
+<li><strong>Transpose K:</strong> K becomes K<sup>T</sup>(h, d, L) for the dot product</li>
+<li><strong>Scaled dot-product:</strong> Q &middot; K<sup>T</sup> produces attention scores with shape (L, L, h)</li>
+<li><strong>Scale:</strong> Divide by &radic;d = &radic;64 = 8</li>
+<li><strong>Softmax:</strong> Apply softmax to get normalized attention weights, shape (L, L, h)</li>
+<li><strong>Apply to values:</strong> Multiply scores by V to get z<sub>h</sub>(L, d, h)</li>
+<li><strong>Concatenate heads:</strong> Merge the h dimension back to get z(L, E<sub>d</sub>)</li>
+<li><strong>Output projection:</strong> Multiply by W<sub>o</sub>(E<sub>d</sub>, E<sub>d</sub>) to get out(L, E<sub>d</sub>)</li>
+<li><strong>Residual connection:</strong> Add input X to get y(L, E<sub>d</sub>)</li>
+<li><strong>Layer normalization:</strong> Normalize to get the final output(L, E<sub>d</sub>)</li>
+</ol>
+<hr />
+<h2 id="the-feed-forward-network">The Feed-Forward Network</h2>
+<p>The FFN is a position-wise operation -- it processes each token independently through the same two-layer network.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_bert_model/page-08.png" alt="Position-wise Feed Forward Network computation flow showing y(L, Ed) through linear projection, GELU, second linear projection, residual connection, and layer norm to output (128, 768)" loading="lazy">
+  <p class="caption">Position-wise Feed Forward Network computation flow showing y(L, E<sub>d</sub>) through linear projection, GELU, second linear projection, residual connection, and layer norm to output (128, 768)</p>
+</div>
+
+<p>The data flow, where E<sub>d</sub> = 768, L = 128, and F<sub>l</sub> = 3072:</p>
+<ol>
+<li><strong>Input:</strong> y with shape (L, E<sub>d</sub>) = (128, 768) -- this is the attention block output</li>
+<li><strong>First linear transformation:</strong> W(E<sub>d</sub>, F<sub>l</sub>) projects to shape (L, F<sub>l</sub>) = (128, 3072)</li>
+<li><strong>GELU activation:</strong> Applied element-wise, shape unchanged at (L, F<sub>l</sub>)</li>
+<li><strong>Second linear transformation:</strong> W(F<sub>l</sub>, E<sub>d</sub>) projects back to shape (L, E<sub>d</sub>) = (128, 768)</li>
+<li><strong>Residual connection:</strong> Add the original input y</li>
+<li><strong>Layer normalization:</strong> Final output shape (L, E<sub>d</sub>) = (128, 768)</li>
+</ol>
+<p>The abstraction is clean: linear projection, nonlinearity, linear projection. The 4x expansion to 3072 gives the network enough capacity to learn useful intermediate representations before compressing back down.</p>
+<hr />
+<h2 id="putting-it-all-together">Putting It All Together</h2>
+<p>The complete BERT encoder block chains attention and FFN with their respective residual connections and normalizations:</p>
+<div class="diagram">
+  <img src="../images/details_of_the_bert_model/page-09.png" alt="Complete BERT architecture computation flow from X(L, Ed) through attention, residual, layer norm, FFN, residual, layer norm to output (128, 768)" loading="lazy">
+  <p class="caption">Complete BERT architecture computation flow from X(L, E<sub>d</sub>) through attention, residual, layer norm, FFN, residual, layer norm to output (128, 768)</p>
+</div>
+
+<p>Input X(128, 768) flows through self-attention, gets added back (residual), normalized, then flows through the FFN, gets added back again (residual), and normalized one more time. The output is (128, 768) -- same shape as the input. Stack this 12 times and you have BERT Base.</p>
+<hr />
+<h2 id="counting-flops">Counting FLOPs</h2>
+<p>Understanding the computational cost of BERT matters for deployment, hardware planning, and optimization. I assume every dot product requires 1 multiplication and 1 addition (2 FLOPs per multiply-accumulate).</p>
+<h3 id="attention-block-weight-matrix-multiplications">Attention Block: Weight Matrix Multiplications</h3>
+<p>Multiplying the input embedding matrix by the weight matrices for Q, K, and V:</p>
+<div class="math-block">
+  3 &times; 128 &times; 768 &times; 768 &times; 2 = 452,984,832 FLOPs
+</div>
+
+<h3 id="attention-block-multi-head-self-attention">Attention Block: Multi-Head Self-Attention</h3>
+<p>The dot products within the attention mechanism across 12 heads:</p>
+<div class="math-block">
+  Q &middot; K<sup>T</sup>: 2 &times; 12 &times; 128 &times; 64 &times; 128 = 25,165,824 FLOPs<br>
+  Scores &middot; V: 2 &times; 12 &times; 128 &times; 64 &times; 128 = 25,165,824 FLOPs<br>
+  W<sub>o</sub> projection: 2 &times; 128 &times; 768 &times; 768 = 150,994,944 FLOPs<br>
+  <strong>Total MHA: 201,326,592 FLOPs</strong>
+</div>
+
+<h3 id="feed-forward-network">Feed-Forward Network</h3>
+<p>Two dense layers with the 768 to 3072 expansion and back:</p>
+<div class="math-block">
+  128 &times; 768 &times; 3072 &times; 2 &times; 2 + 128 = 1,207,959,552 FLOPs
+</div>
+
+<h3 id="total-per-transformer-block">Total Per Transformer Block</h3>
+<div class="math-block">
+  FFN: 1,207,959,552<br>
+  + MHA: 201,326,592<br>
+  + Weight matrices: 452,984,832<br>
+  <strong>= 1,862,270,976 FLOPs per block</strong>
+</div>
+
+<p>For the full 12-block BERT Base, multiply by 12: roughly <strong>22.3 billion FLOPs</strong> per forward pass. The feed-forward network dominates the compute at about 65% of the total, which is a useful fact to know when you are thinking about where to optimize.</p>
+<hr />
+<h2 id="historical-context-from-rnns-to-transformers-to-bert">Historical Context: From RNNs to Transformers to BERT</h2>
+<p>Before BERT, the NLP world relied on Recurrent Neural Networks (RNNs). RNNs had an encoder that took the input sequence and the previous hidden state to output the next hidden state, and a decoder that generated words one at a time. They worked, but they had serious problems: sequential processing made them slow to train and impossible to parallelize, they required fixed-order input processing, and they struggled with long-range dependencies.</p>
+<p>The 2017 "Attention is All You Need" paper changed everything. The Transformer replaced RNNs with self-attention, allowing the model to selectively attend to different parts of the input sequence regardless of position. This made it easier to model long-term dependencies and -- critically -- enabled parallel processing during training.</p>
+<div class="diagram">
+  <img src="../images/cs199/page-01.png" alt="The original Transformer architecture from Attention is All You Need" loading="lazy">
+  <p class="caption">The original Transformer architecture (Vaswani et al., 2017). BERT uses only the encoder side (left).</p>
+</div>
+
+<p>BERT took this encoder architecture and showed that bidirectional pre-training -- reading text in both directions simultaneously -- produced dramatically better representations than left-to-right or right-to-left approaches alone.</p>
+<div class="diagram">
+  <img src="../images/cs199/page-06.png" alt="Structure of the BERT model showing masked language modeling" loading="lazy">
+  <p class="caption">BERT's architecture: input tokens (some masked) flow through the Transformer encoder to produce contextualized representations. From my CS199 independent study at UC Berkeley.</p>
+</div>
+
+<h3 id="beyond-bert-roberta">Beyond BERT: RoBERTa</h3>
+<p>It is worth mentioning RoBERTa, which proposed several key improvements to BERT's pre-training:</p>
+<ul>
+<li><strong>Dynamic masking</strong>: Instead of using the same static mask, RoBERTa randomly masks different tokens at each training step, forcing the model to be more robust</li>
+<li><strong>Larger-scale pre-training</strong>: Trained on 160GB of text (10x BERT's 16GB)</li>
+<li><strong>Longer training</strong>: Maximum sequence length of 512 tokens, trained for 100 epochs</li>
+<li><strong>Removed NSP</strong>: Dropped the Next Sentence Prediction objective entirely</li>
+<li><strong>Larger batch sizes and dynamic learning rates</strong></li>
+</ul>
+<p>RoBERTa outperformed BERT on most benchmark NLP tasks, showing that BERT was significantly undertrained and that the training recipe matters as much as the architecture.</p>
+<p><em>This section draws from my <a href="https://github.com/HivaMohammadzadeh1/SupervisedIndependentStud">CS199 Supervised Independent Study</a> at UC Berkeley.</em></p>
+<hr />
+<h2 id="key-takeaways">Key Takeaways</h2>
+<ul>
+<li>BERT is <strong>encoder-only and bidirectional</strong>. It reads the full sequence at once, which is why it excels at understanding tasks rather than generation tasks.</li>
+<li><strong>Two-phase training</strong> (pre-train with MLM/NSP, then fine-tune) is what makes BERT practical. The expensive pre-training is done once; fine-tuning is cheap.</li>
+<li>Each transformer block has <strong>two sub-layers</strong>: multi-head self-attention and a position-wise feed-forward network, both wrapped in residual connections and layer normalization.</li>
+<li>The <strong>dimensions</strong> are systematic: 768 embedding size, 12 heads with 64 dimensions each, and a 3072-dimensional FFN hidden layer (4x expansion).</li>
+<li><strong>GELU</strong> is the activation function of choice -- smoother gradients and better convergence than ReLU.</li>
+<li>The <strong>FFN dominates the FLOP count</strong> at roughly 1.2 billion FLOPs per block, compared to about 654 million for the full attention mechanism.</li>
+<li>A single transformer block costs about <strong>1.86 billion FLOPs</strong>. Know this number -- it is the basis for reasoning about BERT's computational budget.</li>
+</ul>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p><strong>Deep Learning from the Inside Out</strong></p>
+    <p style="margin-top: 0.35rem;"><a href="https://hivam.org/">Hiva Mohammadzadeh</a> &middot; Stanford MSCS &middot; UC Berkeley EECS</p>
+    <p style="margin-top: 0.35rem; font-size: 0.8rem;">Based on <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a> originally created in 2023</p>
+    <p style="margin-top: 0.5rem;"><a href="../index.html">Back to all posts</a></p>
+  </div>
+</footer>
+
+<script>
+// Reading progress bar
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const scrollTop = doc.scrollTop;
+  const scrollHeight = doc.scrollHeight - doc.clientHeight;
+  const progress = (scrollTop / scrollHeight) * 100;
+  document.getElementById('progressBar').style.width = progress + '%';
+  document.getElementById('header').classList.toggle('scrolled', scrollTop > 10);
+}, { passive: true });
+</script>
+
+</body>
+</html>

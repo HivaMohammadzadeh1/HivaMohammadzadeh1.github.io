@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Details of the GPT-2 Model (Generative Pre-trained Transformer) | Hiva Mohammadzadeh</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-mesh">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Reading progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<header class="site-header" id="header">
+  <div class="container-wide" style="max-width: 1140px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;">
+    <a href="../index.html" class="site-title">
+      <span class="logo-mark">DL</span>
+      Inside Out
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">All Posts</a>
+      <a href="03-bert-model.html">&larr; BERT from the Inside Out</a>
+      <a href="05-t5-model.html">T5: The Text-to-Text Transformer &rarr;</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <article>
+    <h1 id="details-of-the-gpt-2-model-generative-pre-trained-transformer">Details of the GPT-2 Model (Generative Pre-trained Transformer)</h1>
+<p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
+<div class="tldr-box">
+
+**TL;DR:** GPT-2 is a decoder-only transformer that generates text one token at a time using masked self-attention. Unlike BERT, which looks at the full sequence in both directions, GPT-2 enforces a strict causal mask so the model can only attend to past tokens -- this is what makes autoregressive generation possible. The architecture is a stack of 12 transformer decoder blocks, each combining masked multi-head self-attention with a position-wise feed-forward network. For GPT-2 Small, the key numbers are: 128 tokens, 768 embedding dimension, 12 attention heads, 3072 FFN filter size. Total per-block compute comes to roughly 1.5 billion FLOPs, with the feed-forward network dominating the cost.
+
+</div>
+
+<hr />
+<h2 id="what-makes-gpt-2-different">What Makes GPT-2 Different</h2>
+<p>GPT-2 is a pre-trained deep learning model that uses unidirectional transformers to generate one token at a time. That word "unidirectional" is the single most important distinction between GPT-2 and models like BERT.</p>
+<p>BERT is a bidirectional encoder. It sees the entire input sequence at once and builds representations by attending to tokens on both sides of every position. That makes it powerful for understanding tasks -- classification, entity recognition, question answering -- but it cannot generate text. It has no notion of "past" and "future" in a sequence.</p>
+<p>GPT-2 is the opposite. It is a decoder-only model that generates output in an autoregressive fashion. It learns to predict the next word in a sequence given the previous words. At each step, the model can only look backward. It never peeks at tokens that come later. This constraint is enforced by a causal mask in the attention mechanism, and it is the architectural decision that makes GPT-2 a generative model.</p>
+<p>The core architecture consists of 12 Transformer Decoder blocks, where each block has two sub-layers: a Multi-Head Masked Self-Attention mechanism and a position-wise fully connected Feed-Forward Network. For GPT-2 Small (the variant I focus on here), the configuration is 128 tokens with an embedding dimension of 768 and a feed-forward filter size of 3072.</p>
+<div class="arch-diagram">
+<svg viewBox="0 0 700 440" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <rect width="700" height="440" fill="#fafaff" rx="12"/>
+  <text x="350" y="32" text-anchor="middle" font-size="16" font-weight="800" fill="#1e3a5f">GPT-2: Decoder-Only Architecture</text>
+
+  <!-- Input -->
+  <rect x="225" y="375" width="250" height="40" rx="8" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1.5"/>
+  <text x="350" y="400" text-anchor="middle" font-size="12" font-weight="700" fill="#5b21b6">Token Input (one at a time)</text>
+
+  <!-- Embedding -->
+  <rect x="225" y="315" width="250" height="36" rx="8" fill="#e0e7ff" stroke="#a5b4fc" stroke-width="1.5"/>
+  <text x="350" y="338" text-anchor="middle" font-size="11" font-weight="600" fill="#3730a3">Token + Position Embeddings (128, 768)</text>
+
+  <path d="M350 375 L350 355" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Decoder Block -->
+  <rect x="175" y="110" width="350" height="190" rx="12" fill="none" stroke="#7c3aed" stroke-width="2" stroke-dasharray="6 3"/>
+  <text x="540" y="135" font-size="10" font-weight="700" fill="#7c3aed">x12 Blocks</text>
+
+  <!-- Masked Self-Attention -->
+  <rect x="200" y="230" width="300" height="38" rx="8" fill="#fae8ff" stroke="#e879f9" stroke-width="1.5"/>
+  <text x="350" y="247" text-anchor="middle" font-size="10" font-weight="700" fill="#86198f">Masked Multi-Head Self-Attention</text>
+  <text x="350" y="261" text-anchor="middle" font-size="8" fill="#a855f7">(12 heads, d=64, causal mask)</text>
+
+  <!-- Causal Mask Indicator -->
+  <rect x="555" y="228" width="80" height="42" rx="6" fill="#fdf2f8" stroke="#f9a8d4" stroke-width="1"/>
+  <text x="595" y="244" text-anchor="middle" font-size="7" font-weight="700" fill="#be185d">CAUSAL</text>
+  <text x="595" y="256" text-anchor="middle" font-size="7" font-weight="700" fill="#be185d">MASK</text>
+  <text x="595" y="266" text-anchor="middle" font-size="6" fill="#ec4899">▼ triangular</text>
+
+  <!-- Add & Norm 1 -->
+  <rect x="250" y="190" width="200" height="28" rx="6" fill="#dcfce7" stroke="#86efac" stroke-width="1.5"/>
+  <text x="350" y="209" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">Add &amp; Layer Norm</text>
+
+  <!-- FFN -->
+  <rect x="200" y="148" width="300" height="32" rx="8" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="350" y="169" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e">Feed-Forward Network (768 → 3072 → 768) + GELU</text>
+
+  <!-- Add & Norm 2 -->
+  <rect x="250" y="122" width="200" height="22" rx="6" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="350" y="137" text-anchor="middle" font-size="9" font-weight="700" fill="#166534">Add &amp; Layer Norm</text>
+
+  <!-- Arrows -->
+  <path d="M350 315 L350 272" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <path d="M350 230 L350 222" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <path d="M350 190 L350 183" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Output -->
+  <rect x="225" y="55" width="250" height="40" rx="8" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1.5"/>
+  <text x="350" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="#5b21b6">Next Token Prediction</text>
+  <text x="350" y="86" text-anchor="middle" font-size="9" fill="#6b7280">Softmax over vocabulary</text>
+
+  <path d="M350 110 L350 99" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Key difference callout -->
+  <rect x="30" y="230" width="140" height="56" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="100" y="250" text-anchor="middle" font-size="8" font-weight="700" fill="#dc2626">KEY DIFFERENCE</text>
+  <text x="100" y="262" text-anchor="middle" font-size="7" fill="#ef4444">Each token can only</text>
+  <text x="100" y="273" text-anchor="middle" font-size="7" fill="#ef4444">see tokens BEFORE it</text>
+  <path d="M170 258 L195 252" stroke="#fca5a5" stroke-width="1" stroke-dasharray="3 2"/>
+
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+</svg>
+<p class="caption">GPT-2 uses the same transformer building blocks as BERT, but with a causal mask that prevents attending to future tokens. This enables autoregressive text generation.</p>
+</div>
+
+<hr />
+<h2 id="training-next-token-prediction">Training: Next Token Prediction</h2>
+<p>GPT-2's training happens in two stages.</p>
+<p><strong>Pre-Training.</strong> The model is pre-trained on a large, diverse text corpus using an unsupervised learning approach. The objective is straightforward: given a sequence of tokens, predict the next one. The model sees tokens 1 through t and learns to predict token t+1. This is done across billions of tokens, and it gives the model a broad understanding of language structure, grammar, facts, and even some reasoning ability.</p>
+<p><strong>Fine-Tuning.</strong> After pre-training, the model is fine-tuned on specific downstream tasks by adding a task-specific output layer. The pre-trained weights provide a strong initialization, and the fine-tuning stage adapts the model to the particular distribution and format of the target task.</p>
+<p>This two-stage approach is what "pre-trained" means in the name. The model arrives at your fine-tuning task already knowing a lot about language. You are not training from scratch -- you are specializing.</p>
+<hr />
+<h2 id="the-architecture">The Architecture</h2>
+<p>The GPT-2 architecture has two key ingredients: the Transformer Decoder stack and a task-specific output layer on top.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_gpt-2_model/page-04.png" alt="Decoder-Only Architecture with stacked Decoder Blocks, each containing Feed Forward Neural Network and Masked Self-Attention, Token Input at bottom, Token Output at top" loading="lazy">
+  <p class="caption">Decoder-Only Architecture with stacked Decoder Blocks, each containing Feed Forward Neural Network and Masked Self-Attention, Token Input at bottom, Token Output at top</p>
+</div>
+
+<p>Each decoder block contains two sub-layers in sequence. First, a masked multi-head self-attention layer. Second, a position-wise feed-forward network. Both sub-layers use residual connections and layer normalization.</p>
+<p>The input tokens are embedded into 768-dimensional vectors, and those embeddings flow upward through all 12 decoder blocks. The output at the top is a distribution over the vocabulary for the next token prediction.</p>
+<hr />
+<h2 id="the-masked-attention-mechanism">The Masked Attention Mechanism</h2>
+<div class="flow-diagram">
+<div style="display: flex; align-items: center; gap: 2rem; justify-content: center; flex-wrap: wrap;">
+  <div style="text-align: center;">
+    <div style="font-size: 0.8rem; font-weight: 700; color: #5b21b6; margin-bottom: 0.5rem;">Causal Attention Mask</div>
+    <table style="border-collapse: collapse; margin: 0 auto; box-shadow: none; border: none;">
+      <tr>
+        <td style="width:36px;height:36px;background:#ede9fe;border:1px solid #c4b5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#5b21b6;">P<sub>1</sub></td>
+        <td style="width:36px;height:36px;background:#1e1b2e;border:1px solid #c4b5fd;text-align:center;font-size:0.65rem;color:#6b7280;">-∞</td>
+        <td style="width:36px;height:36px;background:#1e1b2e;border:1px solid #c4b5fd;text-align:center;font-size:0.65rem;color:#6b7280;">-∞</td>
+        <td style="width:36px;height:36px;background:#1e1b2e;border:1px solid #c4b5fd;text-align:center;font-size:0.65rem;color:#6b7280;">-∞</td>
+      </tr>
+      <tr>
+        <td style="width:36px;height:36px;background:#ede9fe;border:1px solid #c4b5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#5b21b6;">P<sub>1</sub></td>
+        <td style="width:36px;height:36px;background:#ede9fe;border:1px solid #c4b5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#5b21b6;">P<sub>2</sub></td>
+        <td style="width:36px;height:36px;background:#1e1b2e;border:1px solid #c4b5fd;text-align:center;font-size:0.65rem;color:#6b7280;">-∞</td>
+        <td style="width:36px;height:36px;background:#1e1b2e;border:1px solid #c4b5fd;text-align:center;font-size:0.65rem;color:#6b7280;">-∞</td>
+      </tr>
+      <tr>
+        <td style="width:36px;height:36px;background:#ede9fe;border:1px solid #c4b5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#5b21b6;">P<sub>1</sub></td>
+        <td style="width:36px;height:36px;background:#ede9fe;border:1px solid #c4b5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#5b21b6;">P<sub>2</sub></td>
+        <td style="width:36px;height:36px;background:#ede9fe;border:1px solid #c4b5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#5b21b6;">P<sub>3</sub></td>
+        <td style="width:36px;height:36px;background:#1e1b2e;border:1px solid #c4b5fd;text-align:center;font-size:0.65rem;color:#6b7280;">-∞</td>
+      </tr>
+      <tr>
+        <td style="width:36px;height:36px;background:#ede9fe;border:1px solid #c4b5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#5b21b6;">P<sub>1</sub></td>
+        <td style="width:36px;height:36px;background:#ede9fe;border:1px solid #c4b5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#5b21b6;">P<sub>2</sub></td>
+        <td style="width:36px;height:36px;background:#ede9fe;border:1px solid #c4b5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#5b21b6;">P<sub>3</sub></td>
+        <td style="width:36px;height:36px;background:#ede9fe;border:1px solid #c4b5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#5b21b6;">P<sub>4</sub></td>
+      </tr>
+    </table>
+    <div style="font-size: 0.7rem; color: #a1a1aa; margin-top: 0.5rem;">Dark cells = masked (-∞ before softmax)</div>
+  </div>
+  <div style="text-align: center;">
+    <div style="font-size: 0.8rem; font-weight: 700; color: #1e40af; margin-bottom: 0.5rem;">BERT: Full Attention (no mask)</div>
+    <table style="border-collapse: collapse; margin: 0 auto; box-shadow: none; border: none;">
+      <tr>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+      </tr>
+      <tr>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+      </tr>
+      <tr>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+      </tr>
+      <tr>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+        <td style="width:36px;height:36px;background:#dbeafe;border:1px solid #93c5fd;text-align:center;font-size:0.7rem;font-weight:700;color:#1e40af;">&#10003;</td>
+      </tr>
+    </table>
+    <div style="font-size: 0.7rem; color: #a1a1aa; margin-top: 0.5rem;">Every token sees every other token</div>
+  </div>
+</div>
+<p class="caption" style="text-align:center; margin-top: 1rem; font-size: 0.8rem; color: #a1a1aa;">GPT-2's causal mask (left) vs BERT's full attention (right). The mask is the key architectural difference.</p>
+</div>
+
+<p>This is the heart of GPT-2, and where the fundamental difference from BERT lives.</p>
+<p>The attention mechanism has two components: the attention computation itself and the feed-forward network that follows it. I will break down the attention computation in detail.</p>
+<p><strong>Masked self-attention</strong> allows the model to attend to different parts of the input sequence, but with a critical constraint: each position can only attend to positions at or before it. This is enforced by a lower-triangular mask that sets all "future" attention scores to negative infinity before the softmax. After softmax, those entries become zero -- the model literally cannot see the future.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_gpt-2_model/page-05.png" alt="Transformer decoder stack and masked self-attention visualization with tokens <s> robot must obey ..." loading="lazy">
+  <p class="caption">Transformer decoder stack and masked self-attention visualization with tokens &lt;s&gt; robot must obey ...</p>
+</div>
+
+<p>A few design choices in the decoder block matter:</p>
+<ul>
+<li><strong>Residual connections</strong> are used to avoid the vanishing gradient problem. The input to each sub-layer is added back to the output, so gradients always have a direct path backward through the network.</li>
+<li><strong>Layer Normalization</strong> improves the model's convergence speed by normalizing activations within each layer.</li>
+<li><strong>GELU</strong> is the nonlinearity used in the feed-forward network. It has been found to perform better than other activation functions in transformer architectures -- smoother gradients translate to smoother training (I covered this in detail in my activation functions post).</li>
+</ul>
+<h3 id="dimensions-of-the-weight-matrices">Dimensions of the Weight Matrices</h3>
+<p>The concrete dimensions matter when you are implementing this or counting compute. For GPT-2 Small:</p>
+<ul>
+<li><strong>Input embedding:</strong> (batch_size, 128, 768), which can be reshaped as (batch_size, 128, 64, 12) for parallel processing across the 12 attention heads.</li>
+<li><strong>Projection weight matrices (Wq, Wk, Wv, Wo):</strong> Each is (batch_size, 768, 768). These project the input into the query, key, value, and output spaces.</li>
+<li><strong>Per-head Q, K, V matrices:</strong> Query is (batch_size, 1 token, 768) or equivalently (batch_size, 128, 64, 12). Key and Value are (batch_size, sequence_length, 768) or (batch_size, 128, 64, 12).</li>
+<li><strong>Feed-forward weights:</strong> The first dense layer is (768, 3072) and the second dense layer is (3072, 768).</li>
+</ul>
+<h3 id="the-computation-flow">The Computation Flow</h3>
+<p>Here is the full computation for the attention block, step by step.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_gpt-2_model/page-07.png" alt="Masked Self-Attention showing Ed=768, L=128, h=12, d=Ed/h=64, attention mask (lower triangular with -inf), input embedding matrix, weight matrices, and full flow from X through Q,K,V to output" loading="lazy">
+  <p class="caption">Masked Self-Attention showing Ed=768, L=128, h=12, d=Ed/h=64, attention mask (lower triangular with -inf), input embedding matrix, weight matrices, and full flow from X through Q,K,V to output</p>
+</div>
+
+<p>The input X has shape (L, Ed) = (128, 768). It is projected through three weight matrices to produce Q, K, and V. Then:</p>
+<ol>
+<li>Compute Q * K^T to get raw attention scores.</li>
+<li>Apply the causal mask -- set upper-triangular entries to negative infinity.</li>
+<li>Apply softmax to get normalized attention weights (shape: L x L per head).</li>
+<li>Multiply the attention weights by V to get per-head outputs z_h.</li>
+<li>Concatenate all 12 heads to get z with shape (L, Ed).</li>
+<li>Project through Wo (shape Ed x Ed) to get the attention output (L, Ed).</li>
+<li>Add the residual connection (the original input X).</li>
+<li>Apply Layer Normalization.</li>
+</ol>
+<p>The output is (128, 768) -- same shape as the input, ready for the feed-forward layer.</p>
+<hr />
+<h2 id="the-feed-forward-network">The Feed-Forward Network</h2>
+<p>The FFN in GPT-2 follows the same structure as BERT's feed-forward layer. It is a simple two-layer network with a GELU activation in between.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_gpt-2_model/page-08.png" alt="Feed Forward Layer showing input y with Ed=768, L=128, Fl=3072, linear projections, GELU, residual connection, and layer norm" loading="lazy">
+  <p class="caption">Feed Forward Layer showing input y with Ed=768, L=128, Fl=3072, linear projections, GELU, residual connection, and layer norm</p>
+</div>
+
+<p>The computation is:</p>
+<ol>
+<li>Take the input y (the output of the attention sub-layer), shape (128, 768).</li>
+<li>Apply a linear projection: (Ed, Fl) = (768, 3072). This expands the representation to 4x the embedding dimension.</li>
+<li>Apply GELU activation.</li>
+<li>Apply a second linear projection: (Fl, Ed) = (3072, 768). This compresses back to the embedding dimension.</li>
+<li>Add the residual connection (the input y).</li>
+<li>Apply Layer Normalization.</li>
+</ol>
+<p>The output is again (128, 768). The expansion to 3072 and back to 768 gives the network a wider internal representation to work with before compressing it back down. This bottleneck structure is standard across virtually all transformer architectures.</p>
+<hr />
+<h2 id="full-architecture-walkthrough">Full Architecture Walkthrough</h2>
+<p>Putting it all together, the complete GPT-2 block chains the attention sub-layer and the FFN sub-layer in sequence, each with its own residual connection and layer normalization.</p>
+<div class="diagram">
+  <img src="../images/details_of_the_gpt-2_model/page-09.png" alt="Complete diagram combining masked attention + FFN: full flow from input through attention (with mask), residual, layer norm, FFN, residual, layer norm to output" loading="lazy">
+  <p class="caption">Complete diagram combining masked attention + FFN: full flow from input through attention (with mask), residual, layer norm, FFN, residual, layer norm to output</p>
+</div>
+
+<p>The flow for one decoder block:</p>
+<p>Input (128, 768) --&gt; Masked Multi-Head Self-Attention --&gt; + Residual --&gt; Layer Norm --&gt; FFN --&gt; + Residual --&gt; Layer Norm --&gt; Output (128, 768)</p>
+<p>This block is repeated 12 times. The output of block 1 feeds into block 2, and so on. After all 12 blocks, the final representation is projected to the vocabulary size for next-token prediction.</p>
+<hr />
+<h2 id="counting-flops">Counting FLOPs</h2>
+<p>Understanding compute cost matters when you are choosing model sizes, planning training runs, or comparing architectures. Here is the FLOP breakdown for one forward pass through GPT-2 Small.</p>
+<h3 id="attention-block-flops">Attention Block FLOPs</h3>
+<p><strong>Weight matrix projections (Q, K, V):</strong></p>
+<p>3 x 128 x 768 x 768 x 2 = <strong>301,989,888 FLOPs</strong></p>
+<p>These are the three matrix multiplications that project the input into query, key, and value spaces. The factor of 2 accounts for the multiply-accumulate operations.</p>
+<p><strong>Masked Multi-Head Self-Attention (for 12 heads):</strong></p>
+<ul>
+<li>Q * K^T: 2 x 12 x L(position-dependent) x 64 FLOPs</li>
+<li>Mask application: 1 x 128 x 128 x 2 FLOPs</li>
+<li>Softmax * V: 2 x 12 x 128 x 64 FLOPs</li>
+<li>Concatenation + Wo projection: 2 x 128 x 768 x 768 FLOPs</li>
+</ul>
+<p>Total attention computation: <strong>1,605,632 FLOPs</strong></p>
+<h3 id="feed-forward-network-flops">Feed-Forward Network FLOPs</h3>
+<p>128 x 768 x 3072 x 2 x 2 + 128 = <strong>1,207,959,552 FLOPs</strong></p>
+<p>The two factors of 2 account for the two linear layers (up-projection and down-projection) and the multiply-accumulate operations. The FFN dominates the compute -- it accounts for roughly 80% of the total FLOPs per block.</p>
+<h3 id="total-for-12-transformer-blocks">Total for 12 Transformer Blocks</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>FLOPs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FFN</td>
+<td>1,207,959,552</td>
+</tr>
+<tr>
+<td>Multi-Head Attention</td>
+<td>1,605,632</td>
+</tr>
+<tr>
+<td>Weight matrices (Q, K, V) + projection</td>
+<td>1,179,648 + 301,989,888</td>
+</tr>
+<tr>
+<td><strong>Total per block</strong></td>
+<td><strong>~1,512,734,848</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Multiply by 12 blocks for the full model forward pass: roughly <strong>18.15 billion FLOPs</strong>.</p>
+<h3 id="comparison-with-bert">Comparison with BERT</h3>
+<p>BERT-base has a similar parameter count and layer configuration (12 layers, 768 embedding, 12 heads), but there is one key difference in the attention computation: BERT uses full bidirectional attention (no mask), while GPT-2 uses masked attention. The mask itself does not add significant compute -- it is just a comparison and assignment operation. The real difference is architectural: BERT processes the full sequence simultaneously for understanding, while GPT-2 generates one token at a time for generation. The per-layer FLOP counts are nearly identical; the difference is in how and when the compute is used.</p>
+<hr />
+<h2 id="the-bigger-picture-from-gpt-2-to-gpt-3-to-gpt-4">The Bigger Picture: From GPT-2 to GPT-3 to GPT-4</h2>
+<p>Understanding GPT-2's architecture matters because it is the blueprint for everything that followed. The decoder-only, autoregressive design with the causal mask scales remarkably well.</p>
+<h3 id="gpt-3-few-shot-learning-at-scale">GPT-3: Few-Shot Learning at Scale</h3>
+<p>GPT-3 took the same GPT-2 architecture and scaled it to 175 billion parameters -- 10x more than any previous non-sparse language model. The key insight was that at this scale, the model demonstrates remarkable few-shot learning: it can generate high-quality text for translation, question answering, and even programming tasks with little or no task-specific training data.</p>
+<p>GPT-3 also showed that scaling up language models greatly improves task-agnostic, few-shot performance, sometimes reaching competitiveness with prior state-of-the-art fine-tuning approaches. It can even perform zero-shot learning -- generating quality output for tasks it was never explicitly trained on.</p>
+<div class="diagram">
+  <img src="../images/cs199/page-11.png" alt="GPT-2 architecture and task-specific input formatting" loading="lazy">
+  <p class="caption">The GPT-2/GPT-3 architecture with task-specific input formatting for classification, entailment, similarity, and multiple choice. From my CS199 independent study.</p>
+</div>
+
+<h3 id="gpt-4-multimodal-and-human-level">GPT-4: Multimodal and Human-Level</h3>
+<p>GPT-4 extended the decoder-only lineage further into a large-scale multimodal model that accepts both image and text inputs. It exhibits human-level performance on various professional and academic benchmarks, including passing a simulated bar exam around the median of human test-takers. GPT-4 is also highly steerable -- users can explicitly instruct how they want the model to respond, improving prompt engineering significantly.</p>
+<h3 id="attention-types-forward-vs-causal-vs-triangle">Attention Types: Forward vs Causal vs Triangle</h3>
+<p>In my independent study, I also surveyed the different attention patterns that underpin these models:</p>
+<ul>
+<li><strong>Forward (Self-) Attention</strong>: Each query attends to all keys and values. Used in BERT. Bidirectional.</li>
+<li><strong>Causal Attention</strong>: Each query can only attend to keys and values at or before its position. Used in GPT-2/3/4. The triangular mask we discussed.</li>
+<li><strong>Triangle Attention</strong>: Each query attends to a subset of keys/values based on a maximum distance, forming a triangular pattern. Used to reduce computation while capturing long-range dependencies.</li>
+</ul>
+<div class="diagram">
+  <img src="../images/cs199/page-05.png" alt="Forward attention, causal attention, and their visualizations" loading="lazy">
+  <p class="caption">Self-attention visualization and causal vs full attention patterns. From my CS199 independent study at UC Berkeley.</p>
+</div>
+
+<p><em>This section draws from my <a href="https://github.com/HivaMohammadzadeh1/SupervisedIndependentStud">CS199 Supervised Independent Study</a> at UC Berkeley.</em></p>
+<hr />
+<h2 id="key-takeaways">Key Takeaways</h2>
+<p>Here is what I want you to walk away with:</p>
+<ul>
+<li><strong>GPT-2 is decoder-only and autoregressive.</strong> It generates one token at a time, always looking backward. This is the fundamental architectural choice that separates it from encoder models like BERT.</li>
+<li><strong>The causal mask is what enforces unidirectionality.</strong> A lower-triangular mask with negative infinity in the upper triangle zeros out attention to future tokens after softmax. Simple mechanism, profound consequence.</li>
+<li><strong>The FFN dominates compute.</strong> In GPT-2 Small, the feed-forward network accounts for roughly 80% of the FLOPs per transformer block. The attention mechanism is relatively cheap by comparison.</li>
+<li><strong>Residual connections and layer normalization are not optional.</strong> They are what make it possible to train a 12-layer transformer without vanishing gradients and with stable convergence.</li>
+<li><strong>GELU is the activation of choice.</strong> Its smooth gradient profile outperforms ReLU in transformer architectures.</li>
+<li><strong>The two-stage training paradigm (pre-train then fine-tune) is the reason these models are so effective.</strong> Pre-training on massive text gives the model broad language understanding; fine-tuning specializes it.</li>
+</ul>
+<p>The GPT-2 architecture is not complicated. It is a stack of attention and feed-forward blocks with residual connections and normalization. What makes it powerful is the scale of pre-training, the causal mask that enables generation, and the careful choice of components (GELU, layer norm, residual paths) that keep training stable at depth.</p>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p><strong>Deep Learning from the Inside Out</strong></p>
+    <p style="margin-top: 0.35rem;"><a href="https://hivam.org/">Hiva Mohammadzadeh</a> &middot; Stanford MSCS &middot; UC Berkeley EECS</p>
+    <p style="margin-top: 0.35rem; font-size: 0.8rem;">Based on <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a> originally created in 2023</p>
+    <p style="margin-top: 0.5rem;"><a href="../index.html">Back to all posts</a></p>
+  </div>
+</footer>
+
+<script>
+// Reading progress bar
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const scrollTop = doc.scrollTop;
+  const scrollHeight = doc.scrollHeight - doc.clientHeight;
+  const progress = (scrollTop / scrollHeight) * 100;
+  document.getElementById('progressBar').style.width = progress + '%';
+  document.getElementById('header').classList.toggle('scrolled', scrollTop > 10);
+}, { passive: true });
+</script>
+
+</body>
+</html>

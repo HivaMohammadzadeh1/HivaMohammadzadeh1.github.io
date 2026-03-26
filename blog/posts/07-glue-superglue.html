@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLUE and SuperGLUE Benchmark | Hiva Mohammadzadeh</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-mesh">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Reading progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<header class="site-header" id="header">
+  <div class="container-wide" style="max-width: 1140px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;">
+    <a href="../index.html" class="site-title">
+      <span class="logo-mark">DL</span>
+      Inside Out
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">All Posts</a>
+      <a href="06-llama-model.html">&larr; LLaMA's Efficiency Playbook</a>
+      <a href="08-prompt-tuning.html">Prompt Tuning &rarr;</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <article>
+    <h1 id="glue-and-superglue-benchmark">GLUE and SuperGLUE Benchmark</h1>
+<p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
+<div class="tldr-box">
+
+**TL;DR:** GLUE (General Language Understanding Evaluation) is a benchmark of nine diverse tasks -- from grammar checking to textual entailment -- that produces a single aggregate score for comparing language models. You swap the pretraining head for a task-specific classifier, fine-tune on each task, and average the scores. SuperGLUE succeeded it with harder tasks, better human baselines, and more diverse formats like coreference resolution and causal reasoning. If you are building or evaluating a language understanding model, these benchmarks are the yardstick the field converged on.
+
+</div>
+
+<hr />
+<h2 id="why-we-need-a-benchmark">Why We Need a Benchmark</h2>
+<p>Before GLUE existed, comparing language models was a mess. Every paper picked its own tasks, its own datasets, its own metrics. You could not look at two papers and say which model was better at understanding language -- they were measuring different things.</p>
+<p>GLUE fixed that. It gave the community a single, standardized evaluation suite that covers a broad range of language understanding capabilities. One number to compare models. One leaderboard to track progress. That matters more than it sounds, because without a shared benchmark, the field cannot measure whether it is actually making progress or just overfitting to individual datasets.</p>
+<hr />
+<h2 id="what-is-glue">What Is GLUE?</h2>
+<p>GLUE -- General Language Understanding Evaluation -- is a collection of resources for training, evaluating, and analyzing natural language understanding systems. It bundles together:</p>
+<ul>
+<li><strong>Nine language understanding tasks</strong> built on established existing datasets, selected to cover a diverse range of dataset sizes, text genres, and degrees of difficulty.</li>
+<li><strong>A diagnostic dataset</strong> designed to evaluate and analyze model performance with respect to a wide range of linguistic phenomena found in natural language.</li>
+<li><strong>A public leaderboard</strong> for tracking performance on the benchmark and a dashboard for visualizing the performance of models on the diagnostic set.</li>
+<li><strong>A handcrafted diagnostic test suite</strong> that enables detailed linguistic analysis of models.</li>
+</ul>
+<p>The tasks span question answering, sentiment analysis, and textual entailment. All tasks are single-sentence or sentence-pair classification, with one exception: STS-B, which is a regression task.</p>
+<hr />
+<h2 id="how-the-glue-score-works">How the GLUE Score Works</h2>
+<p>The beauty of GLUE is that it lets researchers compare, in a single number, models against one another. Here is how it works:</p>
+<ol>
+<li><strong>Swap the head.</strong> Remove the pretraining classification layer from your model and replace it with one that accommodates the output of the GLUE task.</li>
+<li><strong>Fine-tune.</strong> Train the model on each of the nine tasks.</li>
+<li><strong>Score.</strong> Evaluate the model on all nine tasks.</li>
+<li><strong>Average.</strong> The resulting average score of those nine tasks is the model's final GLUE performance score.</li>
+</ol>
+<div class="diagram">
+  <img src="../images/glue_and_superglue_benchmarks/page-04.png" alt="Model with Classification Layer on top, Output Vector, stacked transformer blocks (Trm), [CLS] token input at bottom. Individual task scores (CoLA, SST-2, MRPC, ...) summed and averaged to produce Final GLUE Score" loading="lazy">
+  <p class="caption">Model with Classification Layer on top, Output Vector, stacked transformer blocks (Trm), [CLS] token input at bottom. Individual task scores (CoLA, SST-2, MRPC, ...) summed and averaged to produce Final GLUE Score</p>
+</div>
+
+<p>The process is the same regardless of the underlying model. BERT, RoBERTa, XLNet -- they all go through this pipeline. That uniformity is what makes the comparison meaningful.</p>
+<hr />
+<h2 id="the-nine-glue-tasks">The Nine GLUE Tasks</h2>
+<p>The nine tasks fall into three categories: single-sentence tasks, similarity and paraphrase tasks, and inference tasks. I will walk through each one with its key numbers and a concrete example so you can see exactly what the model is being asked to do.</p>
+<h3 id="single-sentence-tasks">Single-Sentence Tasks</h3>
+<p>These tasks give the model a single sentence and ask it to classify it along some dimension.</p>
+<h4 id="cola-corpus-of-linguistic-acceptability">CoLA (Corpus of Linguistic Acceptability)</h4>
+<p><strong>What it tests:</strong> Grammatical correctness. Given a sentence, is it linguistically acceptable?</p>
+<p>CoLA contains 10,657 sentences drawn from 23 linguistics publications, split into 8,551 train / 1,043 validation / 1,063 test. This is a binary classification task, and it uses <strong>Matthews Correlation Coefficient (MCC)</strong> as the metric -- not accuracy, because the classes can be imbalanced and MCC handles that better.</p>
+<p><strong>Example:</strong></p>
+<blockquote>
+<p><strong>Sentence:</strong> "Our friends won't buy this analysis, let alone the next one we propose."
+<strong>Label:</strong> 1 (acceptable)</p>
+</blockquote>
+<p>The interesting thing about CoLA is that the sentences come from linguistics papers, so they include deliberately constructed examples that probe subtle grammatical boundaries. This is not just "does the sentence sound right" -- it is testing whether the model has internalized the formal rules of English syntax.</p>
+<h4 id="sst-2-stanford-sentiment-treebank">SST-2 (Stanford Sentiment Treebank)</h4>
+<p><strong>What it tests:</strong> Sentiment classification. Is the expressed opinion positive or negative?</p>
+<p>SST-2 has 70,042 sentences from movie reviews, split into 67,349 train / 872 validation / 1,822 test. Binary classification, scored by <strong>accuracy</strong>.</p>
+<p><strong>Example:</strong></p>
+<blockquote>
+<p><strong>Sentence:</strong> "that loves its characters and communicates something rather beautiful about human nature"
+<strong>Label:</strong> 1 (positive)</p>
+</blockquote>
+<p>SST-2 is one of the larger GLUE tasks, and movie reviews give it rich, expressive language. The sentences range from obvious ("this movie is terrible") to nuanced, requiring the model to track sentiment through complex syntactic structures.</p>
+<hr />
+<h3 id="similarity-and-paraphrase-tasks">Similarity and Paraphrase Tasks</h3>
+<p>These tasks give the model two sentences and ask whether they mean the same thing, or how similar they are.</p>
+<h4 id="mrpc-microsoft-research-paraphrase-corpus">MRPC (Microsoft Research Paraphrase Corpus)</h4>
+<p><strong>What it tests:</strong> Semantic equivalence. Are two sentences paraphrases of each other?</p>
+<p>MRPC contains 5,800 sentence pairs from online news sources, split into 3,700 train / 1,700 test. Binary classification, scored by <strong>accuracy and F1</strong>. The dataset is imbalanced -- 68% of pairs are positive (paraphrases) -- which is why F1 matters alongside accuracy.</p>
+<p><strong>Example:</strong></p>
+<blockquote>
+<p><strong>Sentence 1:</strong> "Automaker sales were up 2.5 percent in the first quarter."
+<strong>Sentence 2:</strong> "Sales at automakers rose 2.5 percent in the January-March period."
+<strong>Label:</strong> 1 (paraphrase)</p>
+</blockquote>
+<p>This is a great example of what makes paraphrase detection hard. The two sentences say the same thing, but with different words and different syntactic structures. The model has to understand that "first quarter" and "January-March period" are the same concept, and that "were up" and "rose" are semantically equivalent.</p>
+<h4 id="qqp-quora-question-pairs">QQP (Quora Question Pairs)</h4>
+<p><strong>What it tests:</strong> Question semantic equivalence. Are two questions asking the same thing?</p>
+<p>QQP is a large dataset: 795,242 sentence pairs, split into 363,846 train / 40,430 validation / 390,965 test. Binary classification, scored by <strong>accuracy and F1</strong>. The dataset is imbalanced in the opposite direction from MRPC -- 63% of pairs are negative (not duplicates).</p>
+<p>The scale of QQP is notable. With nearly 800K pairs, it is one of the largest GLUE tasks and provides a stress test for how models handle massive training sets. The questions come from Quora, so they cover every topic imaginable and feature the kind of informal, real-world language that carefully curated academic datasets sometimes miss.</p>
+<h4 id="sts-b-semantic-textual-similarity-benchmark">STS-B (Semantic Textual Similarity Benchmark)</h4>
+<p><strong>What it tests:</strong> Degree of semantic similarity on a continuous scale from 1 to 5.</p>
+<p>STS-B has 8,628 sentence pairs from news headlines, image captions, and NLI data, split into 5,749 train / 1,500 validation / 1,379 test. This is the only regression task in GLUE -- instead of a class label, the model outputs a continuous similarity score. It is evaluated using <strong>Pearson and Spearman correlation</strong> coefficients.</p>
+<p><strong>Example:</strong></p>
+<blockquote>
+<p><strong>Sentence 1:</strong> "A plane is taking off."
+<strong>Sentence 2:</strong> "An air plane is taking off."
+<strong>Score:</strong> 5.000</p>
+</blockquote>
+<p>A score of 5.000 means the sentences are semantically identical. The regression format makes STS-B uniquely challenging among GLUE tasks -- the model cannot just learn a decision boundary. It has to learn a meaningful ordering across a continuous range.</p>
+<hr />
+<h3 id="inference-tasks">Inference Tasks</h3>
+<p>These tasks test whether a model can reason about the relationship between two sentences -- typically whether one entails, contradicts, or is neutral with respect to the other.</p>
+<h4 id="mnli-multi-genre-natural-language-inference">MNLI (Multi-Genre Natural Language Inference)</h4>
+<p><strong>What it tests:</strong> Textual entailment. Given a premise and a hypothesis, is the relationship entailment, contradiction, or neutral?</p>
+<p>MNLI is the largest inference task with 392,702 training pairs drawn from 10 different genres of text. It has two validation sets: matched (9,815 examples from the same genres as training) and mismatched (9,832 examples from different genres). Three-class classification, scored by <strong>accuracy</strong> on both matched and mismatched sets.</p>
+<p>The matched/mismatched split is MNLI's most interesting design choice. It explicitly tests whether models generalize across genres. A model that performs well on matched but poorly on mismatched has overfit to the training distribution -- and MNLI will expose that.</p>
+<h4 id="qnli-question-natural-language-inference">QNLI (Question Natural Language Inference)</h4>
+<p><strong>What it tests:</strong> Whether a sentence contains the answer to a question.</p>
+<p>QNLI has approximately 110,000 sentence pairs converted from the Stanford Question Answering Dataset, with about 105,000 train / 5,400 test. The sentences are paired with paragraphs from Wikipedia. Binary classification (entailment or not), scored by <strong>accuracy</strong>.</p>
+<p>QNLI is derived from SQuAD by converting each question-paragraph pair into a set of sentence-level pairs. If a sentence contains the answer to the question, it is labeled as entailment. This reformulation turns an extractive QA task into a sentence-pair classification task, which fits the GLUE format.</p>
+<h4 id="rte-recognizing-textual-entailment">RTE (Recognizing Textual Entailment)</h4>
+<p><strong>What it tests:</strong> Whether a hypothesis can be inferred from a premise.</p>
+<p>RTE aggregates data from a series of annual textual entailment challenges, with approximately 5,500 sentence pairs (2,500 train / 3,000 test). The text comes from news and Wikipedia. Binary classification (entailment or not), scored by <strong>accuracy</strong>.</p>
+<p>RTE is one of the smaller GLUE tasks, which makes it a test of how well models learn from limited data. Many strong models struggle here precisely because there is not enough training signal to fully adapt the pretrained representations.</p>
+<h4 id="wnli-winograd-schema-challenge">WNLI (Winograd Schema Challenge)</h4>
+<p><strong>What it tests:</strong> Pronoun resolution -- determining what a pronoun refers to in context.</p>
+<p>WNLI has about 1,000 sentence pairs (634 train / 146 test) drawn from fiction books. The test set is imbalanced, with 65% of examples labeled as not entailment. Scored by <strong>accuracy</strong>.</p>
+<p>WNLI is notoriously difficult and small. Many GLUE submissions actually skip it or report near-chance performance. The pronoun resolution task requires genuine commonsense reasoning -- the kind of reasoning that statistical pattern matching alone often cannot solve.</p>
+<hr />
+<h2 id="glue-tasks-at-a-glance">GLUE Tasks at a Glance</h2>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Category</th>
+<th>Classes</th>
+<th>Train Size</th>
+<th>Metric</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CoLA</td>
+<td>Single-Sentence</td>
+<td>2</td>
+<td>8,551</td>
+<td>MCC</td>
+</tr>
+<tr>
+<td>SST-2</td>
+<td>Single-Sentence</td>
+<td>2</td>
+<td>67,349</td>
+<td>Accuracy</td>
+</tr>
+<tr>
+<td>MRPC</td>
+<td>Similarity/Paraphrase</td>
+<td>2</td>
+<td>3,700</td>
+<td>Accuracy/F1</td>
+</tr>
+<tr>
+<td>QQP</td>
+<td>Similarity/Paraphrase</td>
+<td>2</td>
+<td>363,846</td>
+<td>Accuracy/F1</td>
+</tr>
+<tr>
+<td>STS-B</td>
+<td>Similarity/Paraphrase</td>
+<td>Regression</td>
+<td>5,749</td>
+<td>Pearson/Spearman</td>
+</tr>
+<tr>
+<td>MNLI</td>
+<td>Inference</td>
+<td>3</td>
+<td>392,702</td>
+<td>Accuracy (matched/mismatched)</td>
+</tr>
+<tr>
+<td>QNLI</td>
+<td>Inference</td>
+<td>2</td>
+<td>~105,000</td>
+<td>Accuracy</td>
+</tr>
+<tr>
+<td>RTE</td>
+<td>Inference</td>
+<td>2</td>
+<td>2,500</td>
+<td>Accuracy</td>
+</tr>
+<tr>
+<td>WNLI</td>
+<td>Inference</td>
+<td>2</td>
+<td>634</td>
+<td>Accuracy</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="enter-superglue">Enter SuperGLUE</h2>
+<p>GLUE served its purpose. Then models got too good at it.</p>
+<p>When BERT and its successors started approaching or exceeding human-level performance on GLUE, the benchmark lost its ability to differentiate between models. If everyone scores above 89, the leaderboard stops being informative. The field needed a harder test.</p>
+<p>SuperGLUE is that harder test. It is a new benchmark upgraded from GLUE with a new set of more difficult language understanding tasks, a software toolkit, and a public leaderboard. The design philosophy is the same -- a standardized suite that produces a single comparable score -- but the tasks are deliberately chosen to be beyond the reach of then-current models.</p>
+<hr />
+<h2 id="what-superglue-improved">What SuperGLUE Improved</h2>
+<p>SuperGLUE was not just "harder GLUE." It made several structural improvements:</p>
+<ul>
+<li><strong>More challenging tasks.</strong> SuperGLUE retains the two hardest tasks from GLUE (RTE and the Winograd-style challenge) and adds new tasks selected from an open call for contributions. The bar for inclusion was high -- tasks had to show substantial headroom between BERT-level baselines and human performance.</li>
+<li><strong>More diverse task formats.</strong> GLUE is entirely sentence classification and regression. SuperGLUE adds coreference resolution and question answering formats, testing a broader range of model capabilities.</li>
+<li><strong>Comprehensive human baselines.</strong> Every SuperGLUE task comes with carefully measured human performance baselines, making it possible to quantify exactly how far models have to go.</li>
+<li><strong>Improved code support.</strong> SuperGLUE ships with a new modular toolkit built on PyTorch and AllenNLP, making it easier to run evaluations consistently.</li>
+<li><strong>Refined usage rules.</strong> The rules were updated to ensure fair competition and give full credit to the original data and task creators.</li>
+</ul>
+<hr />
+<h2 id="the-eight-superglue-tasks">The Eight SuperGLUE Tasks</h2>
+<p>SuperGLUE includes eight tasks. Here is a brief overview of each:</p>
+<p><strong>BoolQ</strong> -- Yes/no question answering. Given a passage and a question, answer yes or no. Contains 15,942 examples (9,427 train / 3,270 validation / 3,245 test) sourced from Google search queries paired with Wikipedia passages. Scored by accuracy.</p>
+<p><strong>CB (CommitmentBank)</strong> -- Natural language inference focused on the degree of commitment a speaker has to a clause. A small but challenging dataset with 557 examples (250 train / 57 validation / 250 test). Scored by accuracy and F1.</p>
+<p><strong>COPA (Choice of Plausible Alternatives)</strong> -- Causal reasoning. Given a premise, choose which of two alternatives is the more plausible cause or effect. Contains 1,000 examples (400 train / 100 validation / 500 test) from blogs and a photography encyclopedia. Scored by accuracy.</p>
+<p><strong>MultiRC</strong> -- Multi-sentence reading comprehension. Given a passage and a question, select all correct answers from a set of candidates. This tests whether models can synthesize information across multiple sentences.</p>
+<p><strong>ReCoRD</strong> -- Reading comprehension with commonsense reasoning. The model must fill in a missing entity in a passage summary, requiring both passage understanding and world knowledge.</p>
+<p><strong>RTE</strong> -- Retained from GLUE. Same textual entailment task, same format. Its inclusion in both benchmarks underscores how difficult it remains.</p>
+<p><strong>WiC (Word-in-Context)</strong> -- Word sense disambiguation. Given a word used in two different sentences, determine whether it has the same meaning in both. This isolates a fundamental challenge in NLP: the same word can mean completely different things depending on context.</p>
+<p><strong>WSC (Winograd Schema Challenge)</strong> -- Pronoun coreference resolution. An upgraded version of GLUE's WNLI, reframed as a coreference task. The model must determine which noun a pronoun refers to, requiring commonsense reasoning about the described situation.</p>
+<hr />
+<h2 id="key-takeaways">Key Takeaways</h2>
+<p>Here is what I want you to walk away with:</p>
+<ul>
+<li><strong>Benchmarks exist to make progress measurable.</strong> Before GLUE, comparing language models was subjective and inconsistent. GLUE gave the field a common yardstick, and SuperGLUE raised the bar when that yardstick was no longer discriminative.</li>
+<li><strong>The GLUE score is a single number, but it summarizes nine very different capabilities.</strong> Grammar checking, sentiment analysis, paraphrase detection, textual entailment, pronoun resolution -- each task tests something distinct. A high GLUE score means the model is good at language understanding broadly, not just at one narrow skill.</li>
+<li><strong>Task diversity matters.</strong> GLUE deliberately spans different dataset sizes (from 634 to 392,702 training examples), different text genres (news, fiction, movie reviews, Quora questions), and different difficulty levels. A model that only works on large datasets or easy tasks will not score well.</li>
+<li><strong>When models saturate a benchmark, you need a harder one.</strong> This is the entire reason SuperGLUE exists. Progress on GLUE plateaued not because language understanding was solved, but because the tasks were no longer hard enough to differentiate top models.</li>
+<li><strong>Small datasets are the real test.</strong> RTE, WNLI, MRPC, and CoLA are all relatively small. They test whether a pretrained model can transfer its knowledge to settings with limited fine-tuning data -- which is often the realistic scenario in practice.</li>
+<li><strong>SuperGLUE is not just harder tasks -- it is better methodology.</strong> Comprehensive human baselines, diverse task formats, and refined evaluation rules make it a more rigorous benchmark, not just a more difficult one.</li>
+</ul>
+<p>The trajectory from GLUE to SuperGLUE is a template for how the field evolves. Build a benchmark, push models until they saturate it, identify the gaps, build a harder benchmark. The tasks change but the principle stays the same: if you cannot measure it, you cannot improve it.</p>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p><strong>Deep Learning from the Inside Out</strong></p>
+    <p style="margin-top: 0.35rem;"><a href="https://hivam.org/">Hiva Mohammadzadeh</a> &middot; Stanford MSCS &middot; UC Berkeley EECS</p>
+    <p style="margin-top: 0.35rem; font-size: 0.8rem;">Based on <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a> originally created in 2023</p>
+    <p style="margin-top: 0.5rem;"><a href="../index.html">Back to all posts</a></p>
+  </div>
+</footer>
+
+<script>
+// Reading progress bar
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const scrollTop = doc.scrollTop;
+  const scrollHeight = doc.scrollHeight - doc.clientHeight;
+  const progress = (scrollTop / scrollHeight) * 100;
+  document.getElementById('progressBar').style.width = progress + '%';
+  document.getElementById('header').classList.toggle('scrolled', scrollTop > 10);
+}, { passive: true });
+</script>
+
+</body>
+</html>

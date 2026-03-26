@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Survey of Activation Functions: A Practitioner's Guide | Hiva Mohammadzadeh</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-mesh">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Reading progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<header class="site-header" id="header">
+  <div class="container-wide" style="max-width: 1140px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;">
+    <a href="../index.html" class="site-title">
+      <span class="logo-mark">DL</span>
+      Inside Out
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">All Posts</a>
+      <a href="00-transformer-attention.html">&larr; The Transformer: Where It All Started</a>
+      <a href="02-normalization-techniques.html">Normalization Techniques &rarr;</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <article>
+    <h1 id="survey-of-activation-functions-a-practitioners-guide">Survey of Activation Functions: A Practitioner's Guide</h1>
+<p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
+<div class="tldr-box">
+
+**TL;DR:** Activation functions are the nonlinearity that makes deep learning work. Linear activations can't model complex data. Sigmoid and Tanh were the early standards but suffer from vanishing gradients. ReLU dominates ConvNets but kills neurons on the negative side. Leaky ReLU patches that. GeLU and Swish are the modern picks -- smoother, better convergence, and they outperform ReLU on deeper models. When choosing an activation, think about your gradients: smoother derivatives mean smoother training.
+
+</div>
+
+<hr />
+<h2 id="why-activation-functions-matter">Why Activation Functions Matter</h2>
+<p>Every neural network needs a decision-maker at each neuron. That decision-maker is the activation function. It takes the weighted sum of inputs and decides what signal to pass forward. Without it, your entire network -- no matter how deep -- collapses into a single linear transformation. A 100-layer network with no activation function is mathematically equivalent to a single-layer network. That is the whole point.</p>
+<p>Activation functions do two things. First, they determine the output range of each neuron: maybe 0 to 1, maybe -1 to 1, maybe 0 to infinity. Second, and more importantly, they inject nonlinearity into the network. That nonlinearity is what lets the model actually learn complex patterns in data -- the kind of patterns that matter in real problems.</p>
+<div class="diagram">
+  <img src="../images/activation_functions/page-02.png" alt="Comparison curves of Mish, Swish, SELU, ELU, ReLU6, Leaky ReLU, ReLU, Softplus, and Tanh" loading="lazy">
+  <p class="caption">Comparison curves of Mish, Swish, SELU, ELU, ReLU6, Leaky ReLU, ReLU, Softplus, and Tanh</p>
+</div>
+
+<p>I have worked with most of these functions in practice, and picking the right one is not a minor detail. It directly affects whether your model trains at all, how fast it converges, and what final accuracy you get.</p>
+<hr />
+<h2 id="linear-vs-non-linear-and-why-non-linear-wins">Linear vs Non-Linear (and Why Non-Linear Wins)</h2>
+<p>The simplest activation function is the identity:</p>
+<div class="math-block">
+  f(x) = x
+</div>
+
+<p>The range is unbounded: (-infinity, +infinity). It passes the signal straight through. The problem is obvious -- it adds zero complexity. Your model cannot learn anything beyond a linear relationship between inputs and outputs. For the kind of data we actually work with (images, text, audio, tabular data with interactions), linear relationships are almost never sufficient. A stack of linear layers is still just a linear function. So we need nonlinearity.</p>
+<p>Non-linear activation functions are what make neural networks universal function approximators. They allow the model to generalize across varied data and to differentiate between outputs in meaningful ways.</p>
+<p>Two terms come up constantly when comparing activation functions:</p>
+<ul>
+<li><strong>Differentiable</strong>: You can compute the slope of the function at any point. This matters because backpropagation needs gradients.</li>
+<li><strong>Monotonic</strong>: The function is either always non-decreasing or always non-increasing. This affects optimization stability.</li>
+</ul>
+<hr />
+<h2 id="the-classics-sigmoid-and-tanh">The Classics: Sigmoid and Tanh</h2>
+<h3 id="sigmoid">Sigmoid</h3>
+<p>Sigmoid was the default activation function for years, especially in feedforward networks (FFNs). It maps any input into the range (0, 1), which makes it a natural choice when you need to predict a probability.</p>
+<div class="math-block">
+  &sigma;(z) = 1 / (1 + e<sup>-z</sup>)
+</div>
+
+<p>Sigmoid is differentiable and monotonic (though its derivative is not monotonic). It is smooth, it is bounded, and it has an intuitive probabilistic interpretation.</p>
+<p>The problem: <strong>vanishing gradients</strong>. For large positive or large negative inputs, the sigmoid output saturates near 0 or 1. The gradient in those regions is nearly zero. During backpropagation, those near-zero gradients get multiplied together across layers, and the network effectively stops learning. I have seen models get completely stuck during training because of this -- the loss plateaus and nothing you do with the learning rate fixes it. That is the sigmoid saturation trap.</p>
+<h3 id="tanh">Tanh</h3>
+<p>Tanh is sigmoid's zero-centered cousin. It maps inputs to the range (-1, 1).</p>
+<div class="math-block">
+  tanh(z) = (e<sup>z</sup> - e<sup>-z</sup>) / (e<sup>z</sup> + e<sup>-z</sup>)
+</div>
+
+<div class="diagram">
+  <img src="../images/activation_functions/page-06.png" alt="Side-by-side comparison of Sigmoid and Tanh curves" loading="lazy">
+  <p class="caption">Side-by-side comparison of Sigmoid and Tanh curves</p>
+</div>
+
+<p>The key advantage over sigmoid: negative inputs get mapped to strongly negative outputs, and zero inputs map near zero. This zero-centering helps with gradient flow and generally makes optimization easier. Tanh is differentiable and monotonic (like sigmoid, its derivative is not monotonic).</p>
+<p>I reach for Tanh mainly in binary classification scenarios. It is still used in FFNs, but for deep networks, there are better options now.</p>
+<p>Both sigmoid and tanh share the same fundamental weakness: gradient saturation at the extremes. For deep networks, that is a dealbreaker.</p>
+<hr />
+<h2 id="the-relu-family">The ReLU Family</h2>
+<h3 id="relu">ReLU</h3>
+<p>ReLU changed everything. It is the activation function used in virtually all convolutional networks and most deep learning architectures today.</p>
+<div class="math-block">
+  R(z) = max(0, z)
+</div>
+
+<p>It is half-rectified from the bottom: anything negative becomes zero, anything positive passes through unchanged. The range is [0, +infinity). Both the function and its derivative are monotonic. It is dead simple to compute, and it does not saturate on the positive side -- gradients flow freely for positive activations.</p>
+<div class="diagram">
+  <img src="../images/activation_functions/page-07.png" alt="ReLU function curve showing the characteristic zero-floor shape" loading="lazy">
+  <p class="caption">ReLU function curve showing the characteristic zero-floor shape</p>
+</div>
+
+<p>The problem: <strong>dying ReLU</strong>. Any neuron that receives a negative input outputs zero, and the gradient through it is also zero. Once a neuron falls into this regime, it may never recover. It is effectively dead -- it contributes nothing to the model and learns nothing from the data. In practice, if your learning rate is too high, a large fraction of your neurons can die early in training, and your model's capacity collapses.</p>
+<h3 id="leaky-relu">Leaky ReLU</h3>
+<p>Leaky ReLU is the straightforward fix for the dying ReLU problem. Instead of clamping negative values to zero, it lets them through with a small slope:</p>
+<div class="math-block">
+  f(y) = ay &nbsp; for y &lt; 0<br>
+  f(y) = y &nbsp;&nbsp; for y &ge; 0<br>
+  (where a = 0.01 typically)
+</div>
+
+<p>The range is (-infinity, +infinity). Both the function and its derivative are monotonic. The small negative slope (usually 0.01) means that neurons never fully die -- they always have a non-zero gradient, so they always have a chance to recover and keep learning.</p>
+<p>In practice, Leaky ReLU is a drop-in replacement for ReLU. The performance improvement is not always dramatic, but it removes the dying neuron failure mode, and that makes training more robust.</p>
+<hr />
+<h2 id="modern-activations-gelu-and-swish">Modern Activations: GeLU and Swish</h2>
+<h3 id="gelu-gaussian-error-linear-unit">GeLU (Gaussian Error Linear Unit)</h3>
+<p>GeLU is what you get when you smooth out ReLU in a principled way. It outperforms both ELU and ReLU in my experience, and the benchmarks back this up consistently.</p>
+<div class="diagram">
+  <img src="../images/activation_functions/page-09.png" alt="GeLU compared to ReLU and ELU, plus GeLU derivative curve" loading="lazy">
+  <p class="caption">GeLU compared to ReLU and ELU, plus GeLU derivative curve</p>
+</div>
+
+<p>GeLU is non-convex and non-monotonic. It exhibits curvature at all points and can output both positive and negative values. That non-monotonicity is a feature, not a bug -- it gives the function a richer landscape for the network to exploit.</p>
+<p>A few things I have learned about GeLU in practice:</p>
+<ul>
+<li><strong>Use an optimizer with momentum.</strong> Because GeLU is non-convex and non-monotonic, plain SGD can struggle. Adam or SGD with momentum handles it well.</li>
+<li><strong>It converges faster than sigmoids.</strong> In my experiments, switching from sigmoid-based architectures to GeLU consistently reduced the number of epochs needed to reach target accuracy.</li>
+<li><strong>The steep slope near x = 0 matters.</strong> This region is where many activations sit during the early stages of training. GeLU's steep gradient there makes it effective at learning complex patterns right from the start.</li>
+</ul>
+<p>GeLU is the default activation in GPT, BERT, and most modern transformer architectures. That is not an accident.</p>
+<h3 id="swish">Swish</h3>
+<p>Swish is another smooth, non-monotonic activation that comes from a neural architecture search by Google Brain:</p>
+<div class="math-block">
+  swish(x) = x &middot; &sigma;(&beta;x) = x / (1 + e<sup>-&beta;x</sup>)
+</div>
+
+<p>Swish works better than ReLU on deeper models across a range of datasets -- this has been validated extensively. It is unbounded above and bounded below. Like GeLU, it is smooth and non-monotonic.</p>
+<p>One key property: Swish has a <strong>non-zero gradient at x = 0</strong>. This means the network can learn in the region around zero, unlike ReLU where the gradient is undefined at exactly zero and zero for all negative values. That small difference adds up across millions of parameters and thousands of training steps.</p>
+<hr />
+<h2 id="why-derivatives-matter">Why Derivatives Matter</h2>
+<p>This is the part that many tutorials gloss over, but it is critical. During backpropagation, you are not using the activation function directly -- you are using its <strong>derivative</strong>. The derivative tells the optimizer two things: which direction to update the weights, and how much to update them.</p>
+<div class="diagram">
+  <img src="../images/activation_functions/page-11.png" alt="Derivative curves for Sigmoid, Tanh, ReLU, Softplus, and Gaussian" loading="lazy">
+  <p class="caption">Derivative curves for Sigmoid, Tanh, ReLU, Softplus, and Gaussian</p>
+</div>
+
+<p>The rule of thumb is simple: <strong>smoother derivatives produce smoother training</strong>. Jagged or discontinuous derivatives (like ReLU's hard transition at zero) can cause instability. Smooth derivatives (like those of GeLU, Swish, or Softplus) give the optimizer a more consistent signal, which translates to more stable convergence.</p>
+<p>This is one of the main reasons GeLU and Swish have displaced ReLU in transformer architectures. The functions themselves are similar in shape, but the smoothness of their derivatives makes a measurable difference in training dynamics.</p>
+<hr />
+<h2 id="quick-reference-table">Quick Reference Table</h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Equation</th>
+<th>Derivative</th>
+<th>Range</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Identity</strong></td>
+<td>f(x) = x</td>
+<td>f'(x) = 1</td>
+<td>(-inf, +inf)</td>
+</tr>
+<tr>
+<td><strong>Binary Step</strong></td>
+<td>f(x) = 0 for x &lt; 0, 1 for x &gt;= 0</td>
+<td>f'(x) = 0 (everywhere except x=0)</td>
+<td>{0, 1}</td>
+</tr>
+<tr>
+<td><strong>Sigmoid</strong></td>
+<td>f(x) = 1/(1+e^(-x))</td>
+<td>f'(x) = f(x)(1 - f(x))</td>
+<td>(0, 1)</td>
+</tr>
+<tr>
+<td><strong>Tanh</strong></td>
+<td>f(x) = tanh(x)</td>
+<td>f'(x) = 1 - f(x)^2</td>
+<td>(-1, 1)</td>
+</tr>
+<tr>
+<td><strong>ArcTan</strong></td>
+<td>f(x) = arctan(x)</td>
+<td>f'(x) = 1/(x^2 + 1)</td>
+<td>(-pi/2, pi/2)</td>
+</tr>
+<tr>
+<td><strong>ReLU</strong></td>
+<td>f(x) = max(0, x)</td>
+<td>f'(x) = 0 for x&lt;0, 1 for x&gt;=0</td>
+<td>[0, +inf)</td>
+</tr>
+<tr>
+<td><strong>PReLU</strong></td>
+<td>f(x) = ax for x&lt;0, x for x&gt;=0</td>
+<td>f'(x) = a for x&lt;0, 1 for x&gt;=0</td>
+<td>(-inf, +inf)</td>
+</tr>
+<tr>
+<td><strong>ELU</strong></td>
+<td>f(x) = a(e^x - 1) for x&lt;0, x for x&gt;=0</td>
+<td>f'(x) = f(x)+a for x&lt;0, 1 for x&gt;=0</td>
+<td>(-a, +inf)</td>
+</tr>
+<tr>
+<td><strong>Softplus</strong></td>
+<td>f(x) = ln(1 + e^x)</td>
+<td>f'(x) = 1/(1 + e^(-x))</td>
+<td>(0, +inf)</td>
+</tr>
+</tbody>
+</table>
+<div class="diagram">
+  <img src="../images/activation_functions/page-12.png" alt="Summary table with function plots for each activation function" loading="lazy">
+  <p class="caption">Summary table with function plots for each activation function</p>
+</div>
+
+<hr />
+<h2 id="takeaway">Takeaway</h2>
+<p>Here is how I think about choosing activation functions in practice:</p>
+<ul>
+<li><strong>Default for deep networks and ConvNets:</strong> Start with ReLU. It is fast, well-understood, and works.</li>
+<li><strong>If you see dying neurons:</strong> Switch to Leaky ReLU. Same computational cost, no dead neurons.</li>
+<li><strong>For transformers and modern architectures:</strong> Use GeLU. It is the standard for a reason -- smoother gradients, faster convergence, better final performance.</li>
+<li><strong>For deeper models where you want to squeeze out extra performance:</strong> Try Swish. It consistently beats ReLU on deep architectures.</li>
+<li><strong>For output layers with probability targets:</strong> Sigmoid (binary) or Softmax (multi-class) are still the right tools.</li>
+<li><strong>Avoid sigmoid and tanh in hidden layers of deep networks.</strong> The vanishing gradient problem is real and it will slow you down.</li>
+</ul>
+<p>The trend in the field is clear: we are moving toward smoother, non-monotonic activations. GeLU and Swish are not just marginal improvements -- they represent a meaningful shift in how we think about the nonlinearities in our networks. The smoothness of their derivatives translates directly into more stable and efficient training.</p>
+<p>Pick the right activation function for your architecture, pay attention to your gradients, and do not be afraid to experiment.</p>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p><strong>Deep Learning from the Inside Out</strong></p>
+    <p style="margin-top: 0.35rem;"><a href="https://hivam.org/">Hiva Mohammadzadeh</a> &middot; Stanford MSCS &middot; UC Berkeley EECS</p>
+    <p style="margin-top: 0.35rem; font-size: 0.8rem;">Based on <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a> originally created in 2023</p>
+    <p style="margin-top: 0.5rem;"><a href="../index.html">Back to all posts</a></p>
+  </div>
+</footer>
+
+<script>
+// Reading progress bar
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const scrollTop = doc.scrollTop;
+  const scrollHeight = doc.scrollHeight - doc.clientHeight;
+  const progress = (scrollTop / scrollHeight) * 100;
+  document.getElementById('progressBar').style.width = progress + '%';
+  document.getElementById('header').classList.toggle('scrolled', scrollTop > 10);
+}, { passive: true });
+</script>
+
+</body>
+</html>

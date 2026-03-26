@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prompt Tuning: From Fine-Tuning to Soft Prompts and Beyond | Hiva Mohammadzadeh</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-mesh">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Reading progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<header class="site-header" id="header">
+  <div class="container-wide" style="max-width: 1140px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;">
+    <a href="../index.html" class="site-title">
+      <span class="logo-mark">DL</span>
+      Inside Out
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">All Posts</a>
+      <a href="07-glue-superglue.html">&larr; GLUE and SuperGLUE Benchmarks</a>
+      <a href="09-scaling-foundation-models.html">Scaling Laws and Foundation Models &rarr;</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <article>
+    <h1 id="prompt-tuning-from-fine-tuning-to-soft-prompts-and-beyond">Prompt Tuning: From Fine-Tuning to Soft Prompts and Beyond</h1>
+<p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
+<div class="tldr-box">
+
+**TL;DR:** Fine-tuning every parameter of a large language model for each new task is expensive and inefficient. Prompt tuning offers a better path: freeze the model, learn a small set of continuous "soft prompt" vectors, and get competitive performance at a fraction of the cost. This post walks through the evolution from full fine-tuning to hard prompts to soft prompts, covers prefix tuning and prompt tuning (they are different), explains how prompt ensembling reduces hallucination, and shows how chain-of-thought prompting unlocks reasoning. The MedPrompt case study ties it all together -- GPT-4 with smart prompting strategies hits 90.2% on medical exam questions, outperforming fine-tuned specialist models.
+
+</div>
+
+<hr />
+<h2 id="the-problem-with-fine-tuning">The Problem with Fine-Tuning</h2>
+<p>Fine-tuning is the most straightforward way to adapt a pre-trained language model to a new task. You take your base LLM, feed it a smaller labeled dataset specific to your domain, and update all of the model's parameters through backpropagation. The result is a fine-tuned model that performs well on your target task.</p>
+<div class="diagram">
+  <img src="../images/prompt_tuning/page-03.png" alt="Diagram: Base LLM + Domain/Task-specific Dataset --> Fine-tuned LLM pipeline" loading="lazy">
+  <p class="caption">Diagram: Base LLM + Domain/Task-specific Dataset --> Fine-tuned LLM pipeline</p>
+</div>
+
+<p>The problem is cost and scalability. Every new task requires its own fine-tuning run. If you have ten tasks, you need ten separate fine-tuned models. For a model with 11 billion parameters, that means storing and serving ten copies of 11 billion parameters. The compute cost of the fine-tuning runs themselves adds up fast. And you need a labeled dataset for each task, which in many domains is hard to come by.</p>
+<p>This is the fundamental tension that motivates everything in this post: how do we get task-specific behavior from a general-purpose model without retraining the entire thing?</p>
+<hr />
+<h2 id="hard-prompts-prompt-engineering">Hard Prompts: Prompt Engineering</h2>
+<p>The simplest answer is prompt engineering, sometimes called "hard prompting." Instead of changing the model, you change the input. You craft a natural language prompt -- a task description, maybe some examples, and an output indicator -- and prepend it to your input at inference time. The model stays frozen. No training required.</p>
+<div class="diagram">
+  <img src="../images/prompt_tuning/page-04.png" alt="Diagram: Prompt structure showing Task Description + Current Input + Output Indicator --> Language Model --> Completion" loading="lazy">
+  <p class="caption">Diagram: Prompt structure showing Task Description + Current Input + Output Indicator --> Language Model --> Completion</p>
+</div>
+
+<p>The prompt is made of discrete input tokens -- actual words and sentences that a human writes. This is what makes them "hard" prompts. You can read them, edit them, and reason about them.</p>
+<p>But hard prompts have real limitations. First, it is genuinely difficult to craft a good prompt. Small wording changes can produce dramatically different outputs, and there is no systematic way to know which phrasing will work best. Second, the search space is combinatorial -- you are trying to find the right sequence of discrete tokens from a vocabulary of tens of thousands, and you cannot use gradient descent to help you because the search space is not differentiable. Third, it is difficult or impossible to know the downstream impact of a prompt before running it. You are essentially guessing and checking.</p>
+<p>This is a ceiling. No matter how clever your prompt engineering, you are limited by what you can express in natural language tokens.</p>
+<hr />
+<h2 id="soft-prompts-learning-the-prompt">Soft Prompts: Learning the Prompt</h2>
+<p>Soft prompts break through that ceiling. Instead of discrete tokens that a human writes, soft prompts are continuous vectors in the model's embedding space -- learned representations that are optimized directly through backpropagation. They are not words. They are embeddings that represent patterns the model can leverage for a specific task.</p>
+<div class="diagram">
+  <img src="../images/prompt_tuning/page-05.png" alt="Diagram: Pre-trained Model (Frozen) with Tunable Soft Prompt prepended to the Input Text" loading="lazy">
+  <p class="caption">Diagram: Pre-trained Model (Frozen) with Tunable Soft Prompt prepended to the Input Text</p>
+</div>
+
+<p>The key idea is that the model itself stays frozen. Only the soft prompt vectors are trainable. This means you can adapt a massive model to a new task by learning a tiny set of parameters while leaving the billions of model weights untouched.</p>
+<p>Soft prompts can be high-level (capturing general task patterns) or task-specific (tuned for a narrow domain). They are consistently more effective than hard prompts because they are not constrained to the discrete token vocabulary -- they can occupy any point in the continuous embedding space, giving them far more expressiveness.</p>
+<p>The tradeoff is interpretability. You cannot read a soft prompt. It is a matrix of floating point numbers. You cannot look at it and understand what the model "learned" the way you can read a hard prompt and understand the instruction. This lack of interpretability is a recurring theme -- it is the price you pay for moving from discrete to continuous optimization.</p>
+<hr />
+<h2 id="prefix-tuning-vs-prompt-tuning">Prefix Tuning vs. Prompt Tuning</h2>
+<p>This is where the terminology gets confusing, because "prefix tuning" and "prompt tuning" are two distinct methods that sound similar. They share the same high-level idea -- freeze the model, learn some task-specific continuous vectors -- but they differ in where and how those vectors are inserted.</p>
+<h3 id="prefix-tuning">Prefix Tuning</h3>
+<p>Prefix tuning, introduced by Li and Liang (2021), adds task-specific token vectors to the key and value matrices at every layer of the transformer. These prefix parameters are inserted across all layers and are optimized through a separate feed-forward network during training.</p>
+<div class="diagram">
+  <img src="../images/prompt_tuning/page-06.png" alt="Diagram: Comparison of Fine-tuning (separate Transformer copy per task) vs. Prefix-tuning (shared Pretrained Transformer with task-specific Prefix vectors at each layer)" loading="lazy">
+  <p class="caption">Diagram: Comparison of Fine-tuning (separate Transformer copy per task) vs. Prefix-tuning (shared Pretrained Transformer with task-specific Prefix vectors at each layer)</p>
+</div>
+
+<p>The practical benefits are significant. Because different tasks only differ in their prefix parameters, it is easy to batch requests from different tasks through the same model -- you just swap the prefix. And prefix tuning tends to improve out-of-domain generalization compared to full fine-tuning, likely because you are not overfitting the entire model to one task's distribution.</p>
+<div class="diagram">
+  <img src="../images/prompt_tuning/page-07.png" alt="Charts: ROUGE-1, ROUGE-2, BLEU scores comparing Fine-tuning (FT) vs. Prefix-tuning (PT) across varying training data sizes" loading="lazy">
+  <p class="caption">Charts: ROUGE-1, ROUGE-2, BLEU scores comparing Fine-tuning (FT) vs. Prefix-tuning (PT) across varying training data sizes</p>
+</div>
+
+<p>The performance data tells a clear story: prefix tuning matches or approaches fine-tuning performance across standard metrics, especially as training data decreases -- which is exactly when you need parameter-efficient methods the most.</p>
+<h3 id="prompt-tuning">Prompt Tuning</h3>
+<p>Prompt tuning, introduced by Lester et al. (2021), is a simpler and more parameter-efficient variant. Instead of adding learned vectors at every layer, prompt tuning adds soft prompt embeddings only at the model's input embedding layer. These embeddings are then tuned through standard backpropagation.</p>
+<div class="diagram">
+  <img src="../images/prompt_tuning/page-08.png" alt="Diagram: Model Tuning (separate 11B parameter model per task) vs. Prompt Tuning (shared 11B model with ~20K parameter task-specific prompts, supporting mixed-task batches)" loading="lazy">
+  <p class="caption">Diagram: Model Tuning (separate 11B parameter model per task) vs. Prompt Tuning (shared 11B model with ~20K parameter task-specific prompts, supporting mixed-task batches)</p>
+</div>
+
+<p>The efficiency gains are dramatic. A full 11-billion-parameter model requires 11 billion parameters per task when fine-tuned. Prompt tuning requires roughly 20,000 parameters per task -- the soft prompt vectors -- while sharing the single frozen model across all tasks. That is a reduction of over five orders of magnitude in task-specific parameters.</p>
+<p>The most striking finding from Lester et al. is that prompt tuning's performance scales with model size. At smaller scales, there is a noticeable gap between prompt tuning and full model tuning. But as models grow larger -- approaching 10 billion parameters -- prompt tuning closes the gap almost entirely.</p>
+<div class="diagram">
+  <img src="../images/prompt_tuning/page-09.png" alt="Chart: SuperGLUE Score vs. Model Parameters (log scale) for Model Tuning, Multi-task Model Tuning, Prompt Design, and Prompt Tuning -- prompt tuning converges with model tuning near 10^11 parameters" loading="lazy">
+  <p class="caption">Chart: SuperGLUE Score vs. Model Parameters (log scale) for Model Tuning, Multi-task Model Tuning, Prompt Design, and Prompt Tuning -- prompt tuning converges with model tuning near 10^11 parameters</p>
+</div>
+
+<p>This is a powerful result. It means that for the largest models -- the ones where fine-tuning is most expensive -- prompt tuning is both the cheapest and the most effective alternative.</p>
+<p><strong>Summary of pros and cons for prompt tuning:</strong>
+- You can tune a massive model with a tiny number of parameters
+- You do not need large labeled datasets
+- It is faster and more efficient than fine-tuning while achieving comparable accuracy
+- It is universally effective across model scales and NLU tasks
+- It supports multi-task and continual learning natively
+- The main downside: soft prompts remain uninterpretable</p>
+<hr />
+<h2 id="prompt-ensembling-boosting-and-bagging-for-prompts">Prompt Ensembling: Boosting and Bagging for Prompts</h2>
+<p>Single prompts, even well-tuned ones, can be unstable. Small perturbations in the input or the prompt can flip the output. This is where prompt ensembling comes in -- using multiple prompts together to get more reliable predictions.</p>
+<div class="diagram">
+  <img src="../images/prompt_tuning/page-10.png" alt="Diagram: Diverse Prompts --> Language Model --> Multiple Reasoning Paths --> Step-aware Voting Verifier --> Agreement" loading="lazy">
+  <p class="caption">Diagram: Diverse Prompts --> Language Model --> Multiple Reasoning Paths --> Step-aware Voting Verifier --> Agreement</p>
+</div>
+
+<p>The idea is borrowed directly from classical ensemble methods in machine learning. A set of few-shot prompts together form a "boosted prompt ensemble," and their combined predictions outperform any single prompt.</p>
+<p>There are two main strategies, mirroring the classical ensemble literature:</p>
+<ul>
+<li><strong>Boosting:</strong> Prompts are combined sequentially. Each successive prompt focuses on correcting the errors made by previous prompts, reducing bias over iterations.</li>
+<li><strong>Bagging:</strong> Prompts are run in parallel on different subsets of the training data. The diversity across prompts reduces variance, and predictions are aggregated (typically by majority vote).</li>
+</ul>
+<div class="diagram">
+  <img src="../images/prompt_tuning/page-11.png" alt="Results table: Ensemble performance across SNLI, MNLI, QNLI, RTE, Ethos, Liar, and ArSarcasm benchmarks" loading="lazy">
+  <p class="caption">Results table: Ensemble performance across SNLI, MNLI, QNLI, RTE, Ethos, Liar, and ArSarcasm benchmarks</p>
+</div>
+
+<p>The practical value of prompt ensembling is in tackling two of the biggest problems with LLMs: hallucination and output instability. When multiple diverse prompts agree on an answer, you can have higher confidence that the answer is correct. When they disagree, that disagreement itself is a useful signal -- it tells you the model is uncertain, and you should be cautious about trusting the output.</p>
+<p>Use prompt ensembling when you need to guarantee quality of data and output. It costs more inference compute (multiple forward passes), but for high-stakes applications, the reliability gains are worth it.</p>
+<hr />
+<h2 id="chain-of-thought-prompting">Chain-of-Thought Prompting</h2>
+<p>Chain-of-thought (CoT) prompting is a different kind of intervention. Instead of changing what the model is asked to do, it changes how the model is asked to think. You prompt the model to produce intermediate reasoning steps before arriving at a final answer.</p>
+<div class="diagram">
+  <img src="../images/prompt_tuning/page-12.png" alt="Side-by-side comparison: Standard Prompting produces wrong answer (27) vs. Chain-of-Thought Prompting produces correct answer (9) by showing step-by-step reasoning" loading="lazy">
+  <p class="caption">Side-by-side comparison: Standard Prompting produces wrong answer (27) vs. Chain-of-Thought Prompting produces correct answer (9) by showing step-by-step reasoning</p>
+</div>
+
+<p>The example in the slides makes this concrete. A standard prompt might lead the model to output 27 for an arithmetic problem -- incorrect. The same problem, prompted with a chain-of-thought example that demonstrates intermediate steps, leads the model to correctly output 9 by working through the logic step by step.</p>
+<p>This works because LLMs are next-token predictors. When you show them a reasoning chain in the prompt, they learn to produce similar chains, and the act of generating intermediate steps forces the model to "think" sequentially rather than jumping to a potentially wrong conclusion.</p>
+<div class="diagram">
+  <img src="../images/prompt_tuning/page-13.png" alt="Charts: CoT performance gains in Commonsense Reasoning, Symbolic Reasoning, and Arithmetic tasks -- significant improvements at larger model scales" loading="lazy">
+  <p class="caption">Charts: CoT performance gains in Commonsense Reasoning, Symbolic Reasoning, and Arithmetic tasks -- significant improvements at larger model scales</p>
+</div>
+
+<p>The performance data shows two important patterns. First, CoT prompting consistently improves performance on reasoning tasks -- commonsense, symbolic, and arithmetic. Second, the gains are scale-dependent: CoT provides minimal benefit for smaller models but becomes dramatically effective as model size increases. This makes sense -- smaller models may not have enough capacity to follow complex reasoning chains, while larger models can leverage the intermediate steps effectively.</p>
+<p>The pros are clear: better reasoning performance and better interpretability (you can inspect the reasoning chain to understand how the model arrived at its answer). CoT prompting has become a standard technique in the practitioner's toolkit, and for good reason.</p>
+<hr />
+<h2 id="case-study-medprompt">Case Study: MedPrompt</h2>
+<p>This is where all of the techniques come together in a practical, high-stakes application. MedPrompt (Nori et al., 2023) is a prompting strategy designed to boost GPT-4's performance on medical exam questions -- specifically the MedQA benchmark. The results are remarkable.</p>
+<p>The goal was straightforward: can smart prompting close the gap with fine-tuned specialist models? The answer is yes, and then some.</p>
+<p>MedPrompt combines three techniques:</p>
+<h3 id="dynamic-few-shot-selection">Dynamic Few-Shot Selection</h3>
+<p>Instead of using random or hand-picked few-shot examples, MedPrompt uses K-nearest-neighbor clustering in the model's embedding space to find the five most relevant examples for each test question. This means every question gets its own tailored set of few-shot demonstrations. It leverages training data similarly to fine-tuning, but without modifying any model parameters.</p>
+<h3 id="self-generated-chain-of-thought">Self-Generated Chain of Thought</h3>
+<p>Rather than manually writing chain-of-thought examples, MedPrompt asks GPT-4 itself to generate the reasoning chains. This automates what would otherwise be the most labor-intensive part of CoT prompting, and the model's own reasoning chains turn out to be highly effective as demonstrations.</p>
+<h3 id="choice-shuffling-ensemble">Choice Shuffling Ensemble</h3>
+<p>This is the most clever piece. LLMs have known position biases -- they may favor answer choice "A" simply because it comes first. MedPrompt addresses this by shuffling the order of answer choices across multiple reasoning paths. For each question, five API calls are made, each with a different ordering of the answer choices. The final answer is selected by majority vote across the five runs. This eliminates position bias and provides the reliability benefits of ensembling.</p>
+<h3 id="the-results">The Results</h3>
+<p>The progression tells the story:</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>MedQA Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Zero-shot</td>
+<td>81.7%</td>
+</tr>
+<tr>
+<td>Random few-shot</td>
+<td>83.9%</td>
+</tr>
+<tr>
+<td>kNN few-shot CoT</td>
+<td>87.3%</td>
+</tr>
+<tr>
+<td>Random few-shot CoT</td>
+<td>88.4%</td>
+</tr>
+<tr>
+<td>Ensemble w/ choice shuffle</td>
+<td><strong>90.2%</strong></td>
+</tr>
+</tbody>
+</table>
+<div class="diagram">
+  <img src="../images/prompt_tuning/page-14.png" alt="Chart: MedQA accuracy progression from PubMedBERT (38.1%) through various models and strategies to GPT-4 Medprompt (90.2%)" loading="lazy">
+  <img src="../images/prompt_tuning/page-15.png" alt="Chart: MedQA accuracy progression from PubMedBERT (38.1%) through various models and strategies to GPT-4 Medprompt (90.2%)" loading="lazy">
+  <img src="../images/prompt_tuning/page-16.png" alt="Chart: MedQA accuracy progression from PubMedBERT (38.1%) through various models and strategies to GPT-4 Medprompt (90.2%)" loading="lazy">
+  <img src="../images/prompt_tuning/page-17.png" alt="Chart: MedQA accuracy progression from PubMedBERT (38.1%) through various models and strategies to GPT-4 Medprompt (90.2%)" loading="lazy">
+  <img src="../images/prompt_tuning/page-18.png" alt="Chart: MedQA accuracy progression from PubMedBERT (38.1%) through various models and strategies to GPT-4 Medprompt (90.2%)" loading="lazy">
+  <p class="caption">Chart: MedQA accuracy progression from PubMedBERT (38.1%) through various models and strategies to GPT-4 Medprompt (90.2%)</p>
+</div>
+
+<p>Starting from a zero-shot baseline of 81.7%, each technique adds incremental improvement. Dynamic few-shot selection adds 2.2 points. Chain of thought adds another 3.4-4.5 points. And the choice shuffling ensemble pushes the final score to 90.2% -- outperforming fine-tuned specialist models like Med-PaLM 2 that required extensive domain-specific training.</p>
+<p>This is the key insight: a general-purpose model (GPT-4) with no medical fine-tuning, equipped with the right prompting strategies, outperforms models that were specifically trained on medical data. The prompting techniques covered in this post -- few-shot selection, chain of thought, and ensembling -- are not just academic ideas. Combined thoughtfully, they deliver state-of-the-art results in a domain where accuracy literally matters for patient outcomes.</p>
+<hr />
+<h2 id="the-bigger-picture">The Bigger Picture</h2>
+<p>The techniques covered here are just the beginning. The field is expanding rapidly in several directions:</p>
+<ul>
+<li><strong>Zero-Shot CoT:</strong> Prompting with just "Let's think step by step" -- no hand-crafted examples needed</li>
+<li><strong>Automatic CoT:</strong> Automatically generating diverse reasoning chains as demonstrations</li>
+<li><strong>Self-Consistency with CoT:</strong> Sampling multiple reasoning paths and taking the majority vote</li>
+<li><strong>Visual In-Context Learning:</strong> Applying prompting techniques to vision tasks</li>
+<li><strong>Multi-Modal In-Context Learning:</strong> Extending prompting across text, image, and other modalities</li>
+<li><strong>Speech In-Context Learning:</strong> Adapting prompting strategies to speech models</li>
+<li><strong>Graph Classification Prompt Tuning:</strong> Applying soft prompt methods to graph neural networks</li>
+</ul>
+<p>The common thread is the same: instead of retraining the model, find smarter ways to communicate with it.</p>
+<hr />
+<h2 id="key-takeaways">Key Takeaways</h2>
+<p>Here is the evolution, compressed:</p>
+<ol>
+<li>
+<p><strong>Fine-tuning works but does not scale.</strong> Updating all parameters for each task is expensive, requires labeled data, and means storing a full model copy per task.</p>
+</li>
+<li>
+<p><strong>Hard prompts are cheap but limited.</strong> Prompt engineering requires no training, but you are constrained to discrete tokens and cannot systematically optimize.</p>
+</li>
+<li>
+<p><strong>Soft prompts hit the sweet spot.</strong> Continuous, learnable vectors that are optimized through backpropagation while keeping the model frozen. Prefix tuning adds them at every layer; prompt tuning adds them only at the embedding layer and is simpler and more parameter-efficient.</p>
+</li>
+<li>
+<p><strong>Prompt tuning scales with model size.</strong> At 10 billion+ parameters, prompt tuning matches full fine-tuning performance with roughly 20,000 trainable parameters per task instead of 11 billion.</p>
+</li>
+<li>
+<p><strong>Ensembling reduces instability.</strong> Running diverse prompts and aggregating their predictions tackles hallucination and output variance -- critical for production systems.</p>
+</li>
+<li>
+<p><strong>Chain of thought unlocks reasoning.</strong> Asking the model to show its work improves performance on arithmetic, symbolic, and commonsense tasks, especially at scale.</p>
+</li>
+<li>
+<p><strong>Combining techniques is where the real gains are.</strong> MedPrompt shows that stacking dynamic few-shot selection, self-generated CoT, and choice shuffling ensembles can push a general-purpose model past fine-tuned specialists.</p>
+</li>
+</ol>
+<p>The trajectory is clear: we are moving from expensive model modification toward cheap, modular, and composable prompting strategies. The model stays fixed; the interface gets smarter.</p>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p><strong>Deep Learning from the Inside Out</strong></p>
+    <p style="margin-top: 0.35rem;"><a href="https://hivam.org/">Hiva Mohammadzadeh</a> &middot; Stanford MSCS &middot; UC Berkeley EECS</p>
+    <p style="margin-top: 0.35rem; font-size: 0.8rem;">Based on <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a> originally created in 2023</p>
+    <p style="margin-top: 0.5rem;"><a href="../index.html">Back to all posts</a></p>
+  </div>
+</footer>
+
+<script>
+// Reading progress bar
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const scrollTop = doc.scrollTop;
+  const scrollHeight = doc.scrollHeight - doc.clientHeight;
+  const progress = (scrollTop / scrollHeight) * 100;
+  document.getElementById('progressBar').style.width = progress + '%';
+  document.getElementById('header').classList.toggle('scrolled', scrollTop > 10);
+}, { passive: true });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scaling Foundation Models: From GPT-3 to GPT-4 and What Comes Next | Hiva Mohammadzadeh</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-mesh">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Reading progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<header class="site-header" id="header">
+  <div class="container-wide" style="max-width: 1140px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;">
+    <a href="../index.html" class="site-title">
+      <span class="logo-mark">DL</span>
+      Inside Out
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">All Posts</a>
+      <a href="08-prompt-tuning.html">&larr; Prompt Tuning</a>
+      
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <article>
+    <h1 id="scaling-foundation-models-from-gpt-3-to-gpt-4-and-what-comes-next">Scaling Foundation Models: From GPT-3 to GPT-4 and What Comes Next</h1>
+<p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
+<div class="tldr-box">
+
+**TL;DR:** Scale changes everything. GPT-3 showed that a 175-billion-parameter model can perform tasks it was never explicitly trained on -- just from a handful of examples in the prompt. PaLM pushed to 540 billion parameters and broke through on multi-step reasoning. GPT-4 added multimodal input and hit human-level performance on professional benchmarks like the bar exam. These are not just bigger models doing the same thing slightly better. At each scale jump, qualitatively new capabilities emerge. This post covers the scaling trajectory from GPT-3 through PaLM to GPT-4, the opportunities foundation models unlock in healthcare, education, and finance, and the real risks -- bias, power concentration, and accountability gaps -- that come with them.
+
+</div>
+
+<hr />
+<h2 id="the-scaling-hypothesis">The Scaling Hypothesis</h2>
+<p>There is a pattern that has held remarkably consistently in deep learning over the past several years: make the model bigger, give it more data, and new capabilities appear. Not just incremental improvements -- genuinely new behaviors that smaller models could not do at all.</p>
+<p>This is the scaling hypothesis, and the models covered in this post are its strongest evidence. GPT-2 had 1.5 billion parameters and could generate coherent paragraphs. GPT-3 scaled to 175 billion and could translate languages, answer trivia, and write code from a few prompt examples. PaLM reached 540 billion and solved multi-step reasoning problems. GPT-4 added vision and matched human professionals on standardized exams.</p>
+<div class="arch-diagram">
+<svg viewBox="0 0 740 260" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <rect width="740" height="260" fill="#fafaff" rx="12"/>
+  <text x="370" y="28" text-anchor="middle" font-size="14" font-weight="800" fill="#1e3a5f">The Scaling Trajectory: Parameters vs Capabilities</text>
+
+  <!-- Timeline line -->
+  <line x1="60" y1="140" x2="690" y2="140" stroke="#e4e4e7" stroke-width="2"/>
+
+  <!-- GPT-2 -->
+  <circle cx="120" cy="140" r="22" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="120" y="136" text-anchor="middle" font-size="7" font-weight="800" fill="#1e40af">GPT-2</text>
+  <text x="120" y="147" text-anchor="middle" font-size="6" font-weight="600" fill="#3b82f6">1.5B</text>
+  <text x="120" y="90" text-anchor="middle" font-size="8" font-weight="700" fill="#1e40af">2019</text>
+  <text x="120" y="180" text-anchor="middle" font-size="7" fill="#6b7280">Coherent text</text>
+  <text x="120" y="192" text-anchor="middle" font-size="7" fill="#6b7280">generation</text>
+
+  <!-- GPT-3 -->
+  <circle cx="290" cy="140" r="32" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+  <text x="290" y="136" text-anchor="middle" font-size="8" font-weight="800" fill="#5b21b6">GPT-3</text>
+  <text x="290" y="148" text-anchor="middle" font-size="7" font-weight="600" fill="#7c3aed">175B</text>
+  <text x="290" y="90" text-anchor="middle" font-size="8" font-weight="700" fill="#5b21b6">2020</text>
+  <text x="290" y="188" text-anchor="middle" font-size="7" fill="#6b7280">Few-shot learning</text>
+  <text x="290" y="200" text-anchor="middle" font-size="7" fill="#6b7280">Zero-shot capability</text>
+
+  <!-- PaLM -->
+  <circle cx="460" cy="140" r="40" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+  <text x="460" y="134" text-anchor="middle" font-size="9" font-weight="800" fill="#047857">PaLM</text>
+  <text x="460" y="148" text-anchor="middle" font-size="7" font-weight="600" fill="#059669">540B</text>
+  <text x="460" y="80" text-anchor="middle" font-size="8" font-weight="700" fill="#047857">2022</text>
+  <text x="460" y="198" text-anchor="middle" font-size="7" fill="#6b7280">Multi-step reasoning</text>
+  <text x="460" y="210" text-anchor="middle" font-size="7" fill="#6b7280">Beats human on BIG-bench</text>
+
+  <!-- GPT-4 -->
+  <circle cx="630" cy="140" r="46" fill="#fef3c7" stroke="#d97706" stroke-width="2.5"/>
+  <text x="630" y="132" text-anchor="middle" font-size="10" font-weight="800" fill="#92400e">GPT-4</text>
+  <text x="630" y="148" text-anchor="middle" font-size="7" font-weight="600" fill="#d97706">???B</text>
+  <text x="630" y="80" text-anchor="middle" font-size="8" font-weight="700" fill="#92400e">2023</text>
+  <text x="630" y="204" text-anchor="middle" font-size="7" fill="#6b7280">Multimodal (image + text)</text>
+  <text x="630" y="216" text-anchor="middle" font-size="7" fill="#6b7280">Human-level on bar exam</text>
+
+  <!-- Emergent capabilities arrows -->
+  <path d="M152 130 L258 130" stroke="#a78bfa" stroke-width="1" stroke-dasharray="4 2" marker-end="url(#ars)"/>
+  <text x="205" y="122" text-anchor="middle" font-size="6" font-weight="600" fill="#7c3aed">few-shot emerges</text>
+
+  <path d="M322 125 L420 125" stroke="#34d399" stroke-width="1" stroke-dasharray="4 2" marker-end="url(#ars)"/>
+  <text x="371" y="117" text-anchor="middle" font-size="6" font-weight="600" fill="#059669">reasoning emerges</text>
+
+  <path d="M500 120 L584 120" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4 2" marker-end="url(#ars)"/>
+  <text x="542" y="112" text-anchor="middle" font-size="6" font-weight="600" fill="#d97706">vision emerges</text>
+
+  <!-- Scale note -->
+  <text x="370" y="248" text-anchor="middle" font-size="8" fill="#a1a1aa">Circle size proportional to parameter count. Each scale jump produces qualitatively new capabilities.</text>
+
+  <defs>
+    <marker id="ars" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+</svg>
+<p class="caption">The scaling trajectory from GPT-2 to GPT-4. Circle size represents parameter count. At each scale threshold, qualitatively new capabilities emerge that were absent in smaller models.</p>
+</div>
+
+<div class="key-insight">
+
+Scale is not just "more of the same." At certain thresholds, language models exhibit emergent capabilities -- behaviors that are absent in smaller models and appear suddenly as parameters increase. Few-shot learning, chain-of-thought reasoning, and code generation all emerged this way.
+
+</div>
+
+<hr />
+<h2 id="gpt-3-the-few-shot-revolution">GPT-3: The Few-Shot Revolution</h2>
+<p>GPT-3 was the model that made the scaling hypothesis impossible to ignore. At 175 billion parameters -- 10x more than any previous non-sparse language model -- it demonstrated something genuinely surprising: you could get useful task performance without any task-specific training data at all.</p>
+<p>The key insight is few-shot learning. Instead of fine-tuning on thousands of labeled examples, you provide a handful of input-output demonstrations directly in the prompt. The model generalizes from these examples and produces correct outputs on new inputs. GPT-3 did this across language translation, question answering, arithmetic, and even basic programming tasks.</p>
+<p>GPT-3 was pre-trained on a massive corpus -- books, articles, web pages -- to predict the next word in a text sequence. Same objective as GPT-2. The difference is pure scale. And that scale unlocked three distinct modes of operation:</p>
+<ul>
+<li><strong>Zero-shot:</strong> Give the model a task description and an input. No examples. GPT-3 generates quality output on tasks it was never explicitly trained on.</li>
+<li><strong>Few-shot:</strong> Provide a few input-output examples in the prompt. No gradient updates. The model picks up the pattern and applies it to new inputs.</li>
+<li><strong>Fine-tuning:</strong> Traditional adaptation with task-specific training data and gradient updates to the model's parameters.</li>
+</ul>
+<div class="flow-diagram">
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; text-align: center;">
+  <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 1rem;">
+    <div style="font-size: 0.85rem; font-weight: 800; color: #991b1b; margin-bottom: 0.3rem;">Zero-Shot</div>
+    <div style="font-size: 0.72rem; color: #dc2626; margin-bottom: 0.5rem;">No examples needed</div>
+    <div style="background: #fff; border-radius: 6px; padding: 0.5rem; font-size: 0.7rem; color: #52525b; text-align: left; line-height: 1.5;">
+      <strong style="color:#991b1b;">Task:</strong> Translate to French<br>
+      <strong style="color:#991b1b;">Input:</strong> "Hello world"<br>
+      <strong style="color:#059669;">Output:</strong> "Bonjour le monde"
+    </div>
+    <div style="font-size: 0.65rem; color: #a1a1aa; margin-top: 0.4rem;">0 gradient updates</div>
+  </div>
+  <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 1rem;">
+    <div style="font-size: 0.85rem; font-weight: 800; color: #1e40af; margin-bottom: 0.3rem;">Few-Shot</div>
+    <div style="font-size: 0.72rem; color: #3b82f6; margin-bottom: 0.5rem;">A few examples in prompt</div>
+    <div style="background: #fff; border-radius: 6px; padding: 0.5rem; font-size: 0.7rem; color: #52525b; text-align: left; line-height: 1.5;">
+      <strong style="color:#1e40af;">Ex:</strong> dog → chien<br>
+      <strong style="color:#1e40af;">Ex:</strong> cat → chat<br>
+      <strong style="color:#1e40af;">Input:</strong> "bird" →<br>
+      <strong style="color:#059669;">Output:</strong> "oiseau"
+    </div>
+    <div style="font-size: 0.65rem; color: #a1a1aa; margin-top: 0.4rem;">0 gradient updates</div>
+  </div>
+  <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 1rem;">
+    <div style="font-size: 0.85rem; font-weight: 800; color: #047857; margin-bottom: 0.3rem;">Fine-Tuning</div>
+    <div style="font-size: 0.72rem; color: #059669; margin-bottom: 0.5rem;">Full training on task data</div>
+    <div style="background: #fff; border-radius: 6px; padding: 0.5rem; font-size: 0.7rem; color: #52525b; text-align: left; line-height: 1.5;">
+      <strong style="color:#047857;">Data:</strong> 10K+ labeled pairs<br>
+      <strong style="color:#047857;">Train:</strong> Update all weights<br>
+      <strong style="color:#047857;">Result:</strong> Task-specific<br>
+      <strong style="color:#059669;">model</strong>
+    </div>
+    <div style="font-size: 0.65rem; color: #a1a1aa; margin-top: 0.4rem;">Many gradient updates</div>
+  </div>
+</div>
+<p class="caption" style="text-align:center; margin-top: 0.75rem; font-size: 0.8rem; color: #a1a1aa;">GPT-3's three modes of operation. The breakthrough: zero-shot and few-shot require no gradient updates -- the model generalizes from the prompt alone.</p>
+</div>
+
+<p>The remarkable finding was how far zero-shot and few-shot could go. GPT-3 achieved state-of-the-art on SuperGLUE, surpassing previous models by a significant margin. It demonstrated open-ended generation -- producing coherent, contextually appropriate text unconstrained by specific task formats.</p>
+<div class="key-insight">
+
+GPT-3's core contribution was not the architecture (it is essentially a scaled-up GPT-2). It was the demonstration that scaling up greatly improves task-agnostic, few-shot performance -- sometimes reaching competitiveness with fine-tuned models that had access to thousands of labeled examples.
+
+</div>
+
+<p>This changed the economics of NLP. Instead of collecting labeled data and training a model for every task, you could use a single large model and steer it with prompts. The previous post on <a href="08-prompt-tuning.md">prompt tuning</a> covers the techniques that evolved from this realization.</p>
+<hr />
+<h2 id="palm-540-billion-parameters-and-the-pathways-system">PaLM: 540 Billion Parameters and the Pathways System</h2>
+<p>If GPT-3 proved scale matters, PaLM proved it matters even more than people expected. PaLM (Pathway Language Model) is a 540-billion-parameter, dense decoder-only Transformer that pushed the frontier on what a single language model can do.</p>
+<p>What makes PaLM architecturally interesting is not just the parameter count. It is how the model was trained and what infrastructure made it possible.</p>
+<h3 id="the-pathways-system">The Pathways System</h3>
+<p>PaLM was trained with the Pathways system, which enables efficiently training a single model across multiple TPU v4 Pods. This was the first large-scale use of Pathways, scaling to 6,144 TPU chips -- the largest TPU-based system configuration at the time. The system uses a hierarchical architecture with data parallelism at the Pod level across two Cloud TPU v4 Pods, combined with standard data and model parallelism within each Pod.</p>
+<p>This is an infrastructure story as much as a model story. Training a 540-billion-parameter model requires a system that can coordinate thousands of accelerators efficiently, handle communication bottlenecks, and recover from hardware failures. Pathways solved this at unprecedented scale.</p>
+<h3 id="architectural-choices">Architectural Choices</h3>
+<p>PaLM uses parallel layers to speed up training -- computing attention and feed-forward components simultaneously rather than sequentially. It uses multi-query attention to speed up inference. And it introduces the MLM-Mix pre-training objective, jointly pre-training autoencoding and autoregressive language modeling on a large unlabeled corpus, improving out-of-domain performance.</p>
+<h3 id="breakthrough-results">Breakthrough Results</h3>
+<p>PaLM 540B did not just set new state-of-the-art numbers. It broke through on tasks that previous models struggled with fundamentally:</p>
+<ul>
+<li><strong>Multi-step reasoning:</strong> PaLM outperformed fine-tuned state-of-the-art models on reasoning tasks -- surpassing them using few-shot prompting alone.</li>
+<li><strong>BIG-bench:</strong> PaLM outperformed average human performance on BIG-bench, a diverse suite of over 200 tasks designed to probe model capabilities.</li>
+<li><strong>Efficiency:</strong> Despite being 3x larger than GPT-3, PaLM achieved these results more efficiently thanks to Pathways and architectural optimizations.</li>
+</ul>
+<p>The reasoning result is particularly significant. Reasoning was widely considered beyond the reach of next-token prediction. PaLM showed that scale, combined with the right training recipe, could produce genuinely compositional reasoning behavior.</p>
+<hr />
+<h2 id="gpt-4-multimodal-and-human-level">GPT-4: Multimodal and Human-Level</h2>
+<p>GPT-4 represents the next inflection point. It is a large-scale, multimodal model that accepts both image and text inputs and produces text outputs. The "multimodal" part is not a gimmick -- it fundamentally expands what a language model can do.</p>
+<p>GPT-4 is a Transformer model pre-trained to predict the next token, using publicly available data and data licensed from third parties. In terms of training objective, it is the same as GPT-2 and GPT-3. But the capabilities are categorically different.</p>
+<h3 id="what-changed">What Changed</h3>
+<p><strong>Multimodal input.</strong> GPT-4 can accept images alongside text. This is not image captioning -- the model reasons about visual content. In the example above, it identifies that chicken nuggets are arranged to look like a world map and explains why that is funny. This requires understanding the image content, recognizing the resemblance, and connecting it to the joke in the accompanying text.</p>
+<p><strong>Human-level professional performance.</strong> GPT-4 passes a simulated bar exam around the median of human test-takers. It exhibits human-level performance across various professional and academic benchmarks -- consistent, not cherry-picked.</p>
+<p><strong>Longer context.</strong> GPT-4 can handle up to 25,000 words of input, enabling processing of entire documents, long conversations, and complex multi-part instructions.</p>
+<p><strong>Better programming.</strong> GPT-4 is significantly better at processing programming instructions than GPT-3 -- more complex code generation, debugging, and explanation tasks.</p>
+<p><strong>Steerability.</strong> Users can instruct GPT-4 to adopt specific response styles, personas, or constraints, making it far more useful as a general-purpose tool.</p>
+<p><strong>Safety alignment.</strong> Post-training alignment improves factuality and adherence to instructions. The model was trained to limit harmful responses -- not perfect, but a deliberate engineering effort to make the model safer.</p>
+<div class="key-insight">
+
+GPT-4 is a significant improvement over GPT-3 in every measurable dimension: it outperforms other models in English and far outperforms them in other languages. It handles longer prompts, more complex tasks, and produces more reliable outputs. The multimodal capability is not an add-on -- it is a signal that the next generation of foundation models will not be text-only.
+
+</div>
+
+<hr />
+<h2 id="foundation-models-opportunities">Foundation Models: Opportunities</h2>
+<p>The term "foundation model" captures what these large-scale models have become: a base layer that entire applications and industries build on top of. The opportunities are real and span multiple domains.</p>
+<p><strong>Healthcare.</strong> Foundation models can process medical literature, assist with diagnosis, and support clinical decision-making. As I covered in the prompt tuning post, GPT-4 with MedPrompt achieved 90.2% on medical exam questions -- outperforming fine-tuned specialist models. The potential for research acceleration, drug discovery, and clinical documentation is substantial.</p>
+<p><strong>Education.</strong> Personalized tutoring, automated grading, and adaptive learning systems all become more feasible with models at this level. A model that can explain calculus, grade essays, and adapt its teaching style to individual students could transform access to quality education.</p>
+<p><strong>Finance.</strong> Sentiment analysis, automated report generation, risk assessment, and fraud detection all benefit from models that can reason about large volumes of text. Financial applications require high reliability, pushing the field toward better calibration and uncertainty estimation.</p>
+<p>These are not speculative use cases. They are actively being deployed.</p>
+<hr />
+<h2 id="foundation-models-risks">Foundation Models: Risks</h2>
+<div class="arch-diagram">
+<svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <rect width="700" height="220" fill="#fafaff" rx="12"/>
+  <text x="350" y="24" text-anchor="middle" font-size="13" font-weight="800" fill="#1e3a5f">Foundation Models: A Double-Edged Sword</text>
+
+  <!-- Opportunities side -->
+  <rect x="20" y="42" width="320" height="160" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+  <text x="180" y="62" text-anchor="middle" font-size="11" font-weight="800" fill="#047857">Opportunities</text>
+
+  <rect x="35" y="74" width="135" height="50" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1"/>
+  <text x="102" y="94" text-anchor="middle" font-size="9" font-weight="700" fill="#047857">Healthcare</text>
+  <text x="102" y="108" text-anchor="middle" font-size="7" fill="#059669">MedPrompt: 90.2%</text>
+  <text x="102" y="118" text-anchor="middle" font-size="7" fill="#059669">on medical QA</text>
+
+  <rect x="180" y="74" width="145" height="50" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1"/>
+  <text x="252" y="94" text-anchor="middle" font-size="9" font-weight="700" fill="#047857">Education</text>
+  <text x="252" y="108" text-anchor="middle" font-size="7" fill="#059669">Personalized tutoring</text>
+  <text x="252" y="118" text-anchor="middle" font-size="7" fill="#059669">Adaptive learning</text>
+
+  <rect x="35" y="132" width="135" height="50" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1"/>
+  <text x="102" y="152" text-anchor="middle" font-size="9" font-weight="700" fill="#047857">Finance</text>
+  <text x="102" y="166" text-anchor="middle" font-size="7" fill="#059669">Risk assessment</text>
+  <text x="102" y="176" text-anchor="middle" font-size="7" fill="#059669">Fraud detection</text>
+
+  <rect x="180" y="132" width="145" height="50" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1"/>
+  <text x="252" y="152" text-anchor="middle" font-size="9" font-weight="700" fill="#047857">Research</text>
+  <text x="252" y="166" text-anchor="middle" font-size="7" fill="#059669">Drug discovery</text>
+  <text x="252" y="176" text-anchor="middle" font-size="7" fill="#059669">Scientific analysis</text>
+
+  <!-- Risks side -->
+  <rect x="360" y="42" width="320" height="160" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="520" y="62" text-anchor="middle" font-size="11" font-weight="800" fill="#991b1b">Risks</text>
+
+  <rect x="375" y="74" width="135" height="50" rx="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="442" y="94" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">Bias</text>
+  <text x="442" y="108" text-anchor="middle" font-size="7" fill="#dc2626">Amplifies training</text>
+  <text x="442" y="118" text-anchor="middle" font-size="7" fill="#dc2626">data biases</text>
+
+  <rect x="520" y="74" width="145" height="50" rx="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="592" y="94" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">Power</text>
+  <text x="592" y="108" text-anchor="middle" font-size="7" fill="#dc2626">Few companies</text>
+  <text x="592" y="118" text-anchor="middle" font-size="7" fill="#dc2626">control frontier</text>
+
+  <rect x="375" y="132" width="135" height="50" rx="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="442" y="152" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">Employment</text>
+  <text x="442" y="166" text-anchor="middle" font-size="7" fill="#dc2626">Task automation</text>
+  <text x="442" y="176" text-anchor="middle" font-size="7" fill="#dc2626">Uneven impact</text>
+
+  <rect x="520" y="132" width="145" height="50" rx="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="592" y="152" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">Accountability</text>
+  <text x="592" y="166" text-anchor="middle" font-size="7" fill="#dc2626">Who is responsible</text>
+  <text x="592" y="176" text-anchor="middle" font-size="7" fill="#dc2626">for harmful output?</text>
+</svg>
+<p class="caption">Foundation models present enormous opportunities in healthcare, education, finance, and research -- but come with real risks around bias, power concentration, employment displacement, and accountability gaps.</p>
+</div>
+
+<p>The same capabilities that make foundation models powerful make them dangerous if deployed without care. The risks are concrete and well-documented.</p>
+<h3 id="bias">Bias</h3>
+<p>Foundation models learn from their training data. If that data contains biases -- and it does, reflecting the internet and published text -- the model reproduces and sometimes amplifies them. Models have been shown to generate biased outputs across gender, race, religion, and other categories. In high-stakes domains like healthcare and criminal justice, biased outputs cause real harm.</p>
+<h3 id="concentration-of-power">Concentration of Power</h3>
+<p>Training a 540-billion-parameter model requires infrastructure that only a handful of organizations possess. This concentrates the ability to build and control foundation models in a small number of large tech companies. Smaller organizations, academic researchers, and developers in less-resourced countries are increasingly dependent on APIs controlled by these companies.</p>
+<h3 id="employment-impact">Employment Impact</h3>
+<p>Foundation models can automate tasks that previously required human expertise -- writing, translation, coding, analysis. The productivity gains are real, but so is the displacement. The economic impact will not be evenly distributed.</p>
+<h3 id="accountability-gaps">Accountability Gaps</h3>
+<p>When a foundation model produces harmful output, who is responsible? The model developer? The application builder? The end user? Current legal and regulatory frameworks do not have clear answers, and the technology is moving faster than policy.</p>
+<div class="key-insight">
+
+The research community has called for increased transparency, accountability, and collaboration among researchers, policymakers, and industry stakeholders. Responsible development of foundation models is not a separate workstream -- it needs to be embedded in the engineering process from the start.
+
+</div>
+
+<hr />
+<h2 id="what-the-scaling-trajectory-tells-us">What the Scaling Trajectory Tells Us</h2>
+<p>Zoom out and look at the progression:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Year</th>
+<th>Parameters</th>
+<th>Key Capability</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPT-2</td>
+<td>2019</td>
+<td>1.5B</td>
+<td>Coherent text generation</td>
+</tr>
+<tr>
+<td>GPT-3</td>
+<td>2020</td>
+<td>175B</td>
+<td>Few-shot and zero-shot learning</td>
+</tr>
+<tr>
+<td>PaLM</td>
+<td>2022</td>
+<td>540B</td>
+<td>Multi-step reasoning, surpassing human baselines</td>
+</tr>
+<tr>
+<td>GPT-4</td>
+<td>2023</td>
+<td>Undisclosed</td>
+<td>Multimodal input, human-level professional performance</td>
+</tr>
+</tbody>
+</table>
+<p>Three patterns stand out.</p>
+<p><strong>First, emergent capabilities appear at scale thresholds.</strong> Few-shot learning was not a feature of GPT-2. It emerged at GPT-3 scale. Multi-step reasoning was weak in GPT-3. It became strong in PaLM. Multimodal understanding did not exist in text-only models. GPT-4 added it. Each scale jump produces capabilities that did not exist at the previous scale.</p>
+<p><strong>Second, the gap between few-shot and fine-tuned performance is closing.</strong> GPT-3 showed few-shot could compete with fine-tuning on some tasks. PaLM showed it could beat fine-tuned models on reasoning. The distinction between "general-purpose" and "task-specific" models is dissolving.</p>
+<p><strong>Third, infrastructure is becoming the bottleneck.</strong> PaLM required 6,144 TPU chips. Training runs at this scale cost millions of dollars and take weeks. The limiting factor is no longer algorithmic -- it is who can afford the compute. This has implications for who gets to participate in frontier research and who does not.</p>
+<p>The open question is whether this trajectory continues. The optimistic view is that further scaling will produce further breakthroughs. The cautious view is that we are approaching data limitations (the internet is finite), compute limitations (chips are expensive), and fundamental limitations of next-token prediction as an objective. Both views have evidence.</p>
+<p>What is clear is that the models we have today are already powerful enough to transform industries, displace workers, and concentrate power. The time to build robust governance, safety, and accountability frameworks is before the next capability jump, not after.</p>
+<hr />
+<h2 id="key-takeaways">Key Takeaways</h2>
+<ol>
+<li>
+<p><strong>Scale produces qualitatively new capabilities.</strong> GPT-3 at 175B parameters demonstrated few-shot learning that GPT-2 at 1.5B could not do. PaLM at 540B broke through on multi-step reasoning. These are not incremental improvements -- they are emergent behaviors.</p>
+</li>
+<li>
+<p><strong>Few-shot learning changes the economics of NLP.</strong> Instead of collecting labeled data and fine-tuning for every task, a single large model can be steered with prompts. This collapses the cost of building task-specific systems.</p>
+</li>
+<li>
+<p><strong>Infrastructure determines who can participate.</strong> Training PaLM required 6,144 TPU chips and the Pathways system. This level of compute is available to a handful of organizations. The scaling trajectory is concentrating frontier research in fewer and fewer hands.</p>
+</li>
+<li>
+<p><strong>Multimodal is the next frontier.</strong> GPT-4 accepting image inputs is not a novelty feature. It signals that the next generation of foundation models will process text, images, audio, and video together. Applications built on text-only models will need to adapt.</p>
+</li>
+<li>
+<p><strong>Foundation models are double-edged.</strong> Healthcare, education, and finance all stand to benefit enormously. But bias amplification, power concentration, employment disruption, and accountability gaps are real risks that require deliberate intervention -- not just technical fixes, but policy, governance, and institutional design.</p>
+</li>
+<li>
+<p><strong>The gap between research and deployment is shrinking.</strong> GPT-3 was a research demonstration. GPT-4 is a product. The time between "interesting paper" and "deployed system affecting millions" is measured in months, not years.</p>
+</li>
+<li>
+<p><strong>Alignment and safety are engineering problems, not afterthoughts.</strong> GPT-4's post-training alignment -- improving factuality, reducing harmful outputs, increasing steerability -- is as important as the pre-training. Building capable models is only half the job.</p>
+</li>
+</ol>
+<p>The models covered in this series -- from <a href="01-activation-functions.md">activation functions</a> through <a href="03-bert-model.md">BERT</a>, <a href="04-gpt2-model.md">GPT-2</a>, <a href="05-t5-model.md">T5</a>, <a href="06-llama-model.md">LLaMA</a>, <a href="07-glue-superglue.md">benchmarks</a>, <a href="08-prompt-tuning.md">prompt tuning</a>, and now scaling -- trace a clear arc. We went from building individual components to assembling architectures to scaling those architectures until new capabilities emerged. The question now is not "can we build more powerful models?" We can. The question is "what do we do with them?"</p>
+<hr />
+<p><em>Based on my <a href="https://github.com/HivaMohammadzadeh1/SupervisedIndependentStud">CS199 Supervised Independent Study</a> at UC Berkeley and the original <a href="https://github.com/HivaMohammadzadeh1/Presentations">Presentations</a> I created in 2023.</em></p>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p><strong>Deep Learning from the Inside Out</strong></p>
+    <p style="margin-top: 0.35rem;"><a href="https://hivam.org/">Hiva Mohammadzadeh</a> &middot; Stanford MSCS &middot; UC Berkeley EECS</p>
+    <p style="margin-top: 0.35rem; font-size: 0.8rem;">Based on <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a> originally created in 2023</p>
+    <p style="margin-top: 0.5rem;"><a href="../index.html">Back to all posts</a></p>
+  </div>
+</footer>
+
+<script>
+// Reading progress bar
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const scrollTop = doc.scrollTop;
+  const scrollHeight = doc.scrollHeight - doc.clientHeight;
+  const progress = (scrollTop / scrollHeight) * 100;
+  document.getElementById('progressBar').style.width = progress + '%';
+  document.getElementById('header').classList.toggle('scrolled', scrollTop > 10);
+}, { passive: true });
+</script>
+
+</body>
+</html>
