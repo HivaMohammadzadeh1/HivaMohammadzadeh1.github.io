@@ -46,67 +46,43 @@
 <h2 id="the-scaling-hypothesis">The Scaling Hypothesis</h2>
 <p>There is a pattern that has held remarkably consistently in deep learning over the past several years: make the model bigger, give it more data, and new capabilities appear. Not just incremental improvements -- genuinely new behaviors that smaller models could not do at all.</p>
 <p>This is the scaling hypothesis, and the models covered in this post are its strongest evidence. GPT-2 had 1.5 billion parameters and could generate coherent paragraphs. GPT-3 scaled to 175 billion and could translate languages, answer trivia, and write code from a few prompt examples. PaLM reached 540 billion and solved multi-step reasoning problems. GPT-4 added vision and matched human professionals on standardized exams.</p>
-<div class="arch-diagram">
-<svg viewBox="0 0 740 260" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
-  <rect width="740" height="260" fill="#fafaff" rx="12"/>
-  <text x="370" y="28" text-anchor="middle" font-size="14" font-weight="800" fill="#1e3a5f">The Scaling Trajectory: Parameters vs Capabilities</text>
-
-  <!-- Timeline line -->
-  <line x1="60" y1="140" x2="690" y2="140" stroke="#e4e4e7" stroke-width="2"/>
-
-  <!-- GPT-2 -->
-  <circle cx="120" cy="140" r="22" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
-  <text x="120" y="136" text-anchor="middle" font-size="7" font-weight="800" fill="#1e40af">GPT-2</text>
-  <text x="120" y="147" text-anchor="middle" font-size="6" font-weight="600" fill="#3b82f6">1.5B</text>
-  <text x="120" y="90" text-anchor="middle" font-size="8" font-weight="700" fill="#1e40af">2019</text>
-  <text x="120" y="180" text-anchor="middle" font-size="7" fill="#6b7280">Coherent text</text>
-  <text x="120" y="192" text-anchor="middle" font-size="7" fill="#6b7280">generation</text>
-
-  <!-- GPT-3 -->
-  <circle cx="290" cy="140" r="32" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
-  <text x="290" y="136" text-anchor="middle" font-size="8" font-weight="800" fill="#5b21b6">GPT-3</text>
-  <text x="290" y="148" text-anchor="middle" font-size="7" font-weight="600" fill="#7c3aed">175B</text>
-  <text x="290" y="90" text-anchor="middle" font-size="8" font-weight="700" fill="#5b21b6">2020</text>
-  <text x="290" y="188" text-anchor="middle" font-size="7" fill="#6b7280">Few-shot learning</text>
-  <text x="290" y="200" text-anchor="middle" font-size="7" fill="#6b7280">Zero-shot capability</text>
-
-  <!-- PaLM -->
-  <circle cx="460" cy="140" r="40" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
-  <text x="460" y="134" text-anchor="middle" font-size="9" font-weight="800" fill="#047857">PaLM</text>
-  <text x="460" y="148" text-anchor="middle" font-size="7" font-weight="600" fill="#059669">540B</text>
-  <text x="460" y="80" text-anchor="middle" font-size="8" font-weight="700" fill="#047857">2022</text>
-  <text x="460" y="198" text-anchor="middle" font-size="7" fill="#6b7280">Multi-step reasoning</text>
-  <text x="460" y="210" text-anchor="middle" font-size="7" fill="#6b7280">Beats human on BIG-bench</text>
-
-  <!-- GPT-4 -->
-  <circle cx="630" cy="140" r="46" fill="#fef3c7" stroke="#d97706" stroke-width="2.5"/>
-  <text x="630" y="132" text-anchor="middle" font-size="10" font-weight="800" fill="#92400e">GPT-4</text>
-  <text x="630" y="148" text-anchor="middle" font-size="7" font-weight="600" fill="#d97706">???B</text>
-  <text x="630" y="80" text-anchor="middle" font-size="8" font-weight="700" fill="#92400e">2023</text>
-  <text x="630" y="204" text-anchor="middle" font-size="7" fill="#6b7280">Multimodal (image + text)</text>
-  <text x="630" y="216" text-anchor="middle" font-size="7" fill="#6b7280">Human-level on bar exam</text>
-
-  <!-- Emergent capabilities arrows -->
-  <path d="M152 130 L258 130" stroke="#a78bfa" stroke-width="1" stroke-dasharray="4 2" marker-end="url(#ars)"/>
-  <text x="205" y="122" text-anchor="middle" font-size="6" font-weight="600" fill="#7c3aed">few-shot emerges</text>
-
-  <path d="M322 125 L420 125" stroke="#34d399" stroke-width="1" stroke-dasharray="4 2" marker-end="url(#ars)"/>
-  <text x="371" y="117" text-anchor="middle" font-size="6" font-weight="600" fill="#059669">reasoning emerges</text>
-
-  <path d="M500 120 L584 120" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4 2" marker-end="url(#ars)"/>
-  <text x="542" y="112" text-anchor="middle" font-size="6" font-weight="600" fill="#d97706">vision emerges</text>
-
-  <!-- Scale note -->
-  <text x="370" y="248" text-anchor="middle" font-size="8" fill="#a1a1aa">Circle size proportional to parameter count. Each scale jump produces qualitatively new capabilities.</text>
-
-  <defs>
-    <marker id="ars" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
-    </marker>
-  </defs>
-</svg>
-<p class="caption">The scaling trajectory from GPT-2 to GPT-4. Circle size represents parameter count. At each scale threshold, qualitatively new capabilities emerge that were absent in smaller models.</p>
-</div>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Year</th>
+<th>Parameters</th>
+<th>Emergent Capability</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>GPT-2</strong></td>
+<td>2019</td>
+<td>1.5B</td>
+<td>Coherent multi-paragraph text generation</td>
+</tr>
+<tr>
+<td><strong>GPT-3</strong></td>
+<td>2020</td>
+<td>175B</td>
+<td>Few-shot and zero-shot learning from prompts alone</td>
+</tr>
+<tr>
+<td><strong>PaLM</strong></td>
+<td>2022</td>
+<td>540B</td>
+<td>Multi-step reasoning; surpasses human on BIG-bench</td>
+</tr>
+<tr>
+<td><strong>GPT-4</strong></td>
+<td>2023</td>
+<td>Undisclosed</td>
+<td>Multimodal input (image + text); human-level on bar exam</td>
+</tr>
+</tbody>
+</table>
+<p class="caption" style="text-align:center;">At each scale threshold, qualitatively new capabilities emerge that were absent in smaller models.</p>
 
 <div class="key-insight">
 
@@ -213,61 +189,23 @@ GPT-4 is a significant improvement over GPT-3 in every measurable dimension: it 
 <p>These are not speculative use cases. They are actively being deployed.</p>
 <hr />
 <h2 id="foundation-models-risks">Foundation Models: Risks</h2>
-<div class="arch-diagram">
-<svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
-  <rect width="700" height="220" fill="#fafaff" rx="12"/>
-  <text x="350" y="24" text-anchor="middle" font-size="13" font-weight="800" fill="#1e3a5f">Foundation Models: A Double-Edged Sword</text>
-
-  <!-- Opportunities side -->
-  <rect x="20" y="42" width="320" height="160" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
-  <text x="180" y="62" text-anchor="middle" font-size="11" font-weight="800" fill="#047857">Opportunities</text>
-
-  <rect x="35" y="74" width="135" height="50" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1"/>
-  <text x="102" y="94" text-anchor="middle" font-size="9" font-weight="700" fill="#047857">Healthcare</text>
-  <text x="102" y="108" text-anchor="middle" font-size="7" fill="#059669">MedPrompt: 90.2%</text>
-  <text x="102" y="118" text-anchor="middle" font-size="7" fill="#059669">on medical QA</text>
-
-  <rect x="180" y="74" width="145" height="50" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1"/>
-  <text x="252" y="94" text-anchor="middle" font-size="9" font-weight="700" fill="#047857">Education</text>
-  <text x="252" y="108" text-anchor="middle" font-size="7" fill="#059669">Personalized tutoring</text>
-  <text x="252" y="118" text-anchor="middle" font-size="7" fill="#059669">Adaptive learning</text>
-
-  <rect x="35" y="132" width="135" height="50" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1"/>
-  <text x="102" y="152" text-anchor="middle" font-size="9" font-weight="700" fill="#047857">Finance</text>
-  <text x="102" y="166" text-anchor="middle" font-size="7" fill="#059669">Risk assessment</text>
-  <text x="102" y="176" text-anchor="middle" font-size="7" fill="#059669">Fraud detection</text>
-
-  <rect x="180" y="132" width="145" height="50" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1"/>
-  <text x="252" y="152" text-anchor="middle" font-size="9" font-weight="700" fill="#047857">Research</text>
-  <text x="252" y="166" text-anchor="middle" font-size="7" fill="#059669">Drug discovery</text>
-  <text x="252" y="176" text-anchor="middle" font-size="7" fill="#059669">Scientific analysis</text>
-
-  <!-- Risks side -->
-  <rect x="360" y="42" width="320" height="160" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
-  <text x="520" y="62" text-anchor="middle" font-size="11" font-weight="800" fill="#991b1b">Risks</text>
-
-  <rect x="375" y="74" width="135" height="50" rx="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
-  <text x="442" y="94" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">Bias</text>
-  <text x="442" y="108" text-anchor="middle" font-size="7" fill="#dc2626">Amplifies training</text>
-  <text x="442" y="118" text-anchor="middle" font-size="7" fill="#dc2626">data biases</text>
-
-  <rect x="520" y="74" width="145" height="50" rx="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
-  <text x="592" y="94" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">Power</text>
-  <text x="592" y="108" text-anchor="middle" font-size="7" fill="#dc2626">Few companies</text>
-  <text x="592" y="118" text-anchor="middle" font-size="7" fill="#dc2626">control frontier</text>
-
-  <rect x="375" y="132" width="135" height="50" rx="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
-  <text x="442" y="152" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">Employment</text>
-  <text x="442" y="166" text-anchor="middle" font-size="7" fill="#dc2626">Task automation</text>
-  <text x="442" y="176" text-anchor="middle" font-size="7" fill="#dc2626">Uneven impact</text>
-
-  <rect x="520" y="132" width="145" height="50" rx="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
-  <text x="592" y="152" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">Accountability</text>
-  <text x="592" y="166" text-anchor="middle" font-size="7" fill="#dc2626">Who is responsible</text>
-  <text x="592" y="176" text-anchor="middle" font-size="7" fill="#dc2626">for harmful output?</text>
-</svg>
-<p class="caption">Foundation models present enormous opportunities in healthcare, education, finance, and research -- but come with real risks around bias, power concentration, employment displacement, and accountability gaps.</p>
+<div class="arch-cards" style="grid-template-columns: 1fr 1fr;">
+  <div class="arch-card" style="background: #ecfdf5; border-color: #a7f3d0;">
+    <h4 style="color: #047857; margin-bottom: 0.75rem;">Opportunities</h4>
+    <p><strong>Healthcare</strong> &mdash; MedPrompt: 90.2% on medical QA without fine-tuning</p>
+    <p><strong>Education</strong> &mdash; Personalized tutoring and adaptive learning at scale</p>
+    <p><strong>Finance</strong> &mdash; Risk assessment, fraud detection, automated analysis</p>
+    <p><strong>Research</strong> &mdash; Drug discovery and scientific literature synthesis</p>
+  </div>
+  <div class="arch-card" style="background: #fef2f2; border-color: #fecaca;">
+    <h4 style="color: #991b1b; margin-bottom: 0.75rem;">Risks</h4>
+    <p><strong>Bias</strong> &mdash; Amplifies biases present in training data</p>
+    <p><strong>Power concentration</strong> &mdash; Few companies control frontier models</p>
+    <p><strong>Employment</strong> &mdash; Task automation with uneven economic impact</p>
+    <p><strong>Accountability</strong> &mdash; Unclear responsibility for harmful outputs</p>
+  </div>
 </div>
+<p class="caption" style="text-align:center; margin-top: 1rem;">Foundation models present enormous opportunities alongside real, concrete risks.</p>
 
 <p>The same capabilities that make foundation models powerful make them dangerous if deployed without care. The risks are concrete and well-documented.</p>
 <h3 id="bias">Bias</h3>

@@ -60,77 +60,27 @@
 <hr />
 <h2 id="key-innovations">Key Innovations</h2>
 <p>LLaMA does not invent a new architecture from scratch. It takes the original transformer and makes surgical modifications that improve training stability, convergence speed, and computational efficiency. Three changes stand out.</p>
-<div class="arch-diagram">
-<svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
-  <rect width="720" height="340" fill="#fafaff" rx="12"/>
-  <text x="360" y="28" text-anchor="middle" font-size="15" font-weight="800" fill="#1e3a5f">LLaMA: Three Key Modifications</text>
-
-  <!-- Standard Column -->
-  <rect x="30" y="50" width="200" height="260" rx="10" fill="#f8f8fc" stroke="#e4e4e7" stroke-width="1.5"/>
-  <text x="130" y="72" text-anchor="middle" font-size="11" font-weight="800" fill="#71717a">Standard Transformer</text>
-
-  <rect x="50" y="240" width="160" height="28" rx="5" fill="#fae8ff" stroke="#e879f9" stroke-width="1"/>
-  <text x="130" y="259" text-anchor="middle" font-size="9" font-weight="600" fill="#86198f">Self-Attention</text>
-
-  <rect x="50" y="205" width="160" height="24" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
-  <text x="130" y="221" text-anchor="middle" font-size="9" font-weight="600" fill="#166534">Post-Norm (LayerNorm)</text>
-
-  <rect x="50" y="165" width="160" height="28" rx="5" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
-  <text x="130" y="181" text-anchor="middle" font-size="9" font-weight="600" fill="#92400e">FFN + ReLU/GELU</text>
-  <text x="130" y="191" text-anchor="middle" font-size="7" fill="#b45309">(768 → 3072 → 768)</text>
-
-  <rect x="50" y="130" width="160" height="24" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
-  <text x="130" y="146" text-anchor="middle" font-size="9" font-weight="600" fill="#166534">Post-Norm (LayerNorm)</text>
-
-  <rect x="50" y="92" width="160" height="28" rx="5" fill="#e0e7ff" stroke="#a5b4fc" stroke-width="1"/>
-  <text x="130" y="108" text-anchor="middle" font-size="8" font-weight="600" fill="#3730a3">Absolute Position Embed</text>
-  <text x="130" y="118" text-anchor="middle" font-size="7" fill="#6366f1">(added once at input)</text>
-
-  <!-- Arrow -->
-  <text x="287" y="190" text-anchor="middle" font-size="28" fill="#d97706">→</text>
-
-  <!-- LLaMA Column -->
-  <rect x="335" y="50" width="355" height="260" rx="10" fill="#fffbf0" stroke="#f59e0b" stroke-width="2"/>
-  <text x="512" y="72" text-anchor="middle" font-size="11" font-weight="800" fill="#d97706">LLaMA Modifications</text>
-
-  <rect x="355" y="240" width="160" height="28" rx="5" fill="#fae8ff" stroke="#e879f9" stroke-width="1"/>
-  <text x="435" y="259" text-anchor="middle" font-size="9" font-weight="600" fill="#86198f">Self-Attention</text>
-
-  <!-- RMSNorm PRE -->
-  <rect x="540" y="240" width="130" height="28" rx="5" fill="#fef2f2" stroke="#f87171" stroke-width="2"/>
-  <text x="605" y="255" text-anchor="middle" font-size="8" font-weight="800" fill="#dc2626">Pre-RMSNorm</text>
-  <text x="605" y="265" text-anchor="middle" font-size="6" fill="#ef4444">simpler, faster</text>
-
-  <!-- SwiGLU FFN -->
-  <rect x="355" y="165" width="160" height="34" rx="5" fill="#fff7ed" stroke="#f97316" stroke-width="2"/>
-  <text x="435" y="180" text-anchor="middle" font-size="9" font-weight="800" fill="#c2410c">FFN + SwiGLU</text>
-  <text x="435" y="193" text-anchor="middle" font-size="7" fill="#ea580c">(4096 → 11008 → 4096)</text>
-
-  <!-- 3 weight matrices note -->
-  <rect x="540" y="168" width="130" height="28" rx="5" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/>
-  <text x="605" y="183" text-anchor="middle" font-size="7" font-weight="700" fill="#c2410c">3 weight matrices</text>
-  <text x="605" y="193" text-anchor="middle" font-size="6" fill="#ea580c">(not 2 like standard)</text>
-
-  <!-- RoPE -->
-  <rect x="355" y="92" width="160" height="34" rx="5" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
-  <text x="435" y="107" text-anchor="middle" font-size="9" font-weight="800" fill="#1d4ed8">RoPE</text>
-  <text x="435" y="120" text-anchor="middle" font-size="7" fill="#2563eb">Rotary Position Embedding</text>
-
-  <rect x="540" y="95" width="130" height="28" rx="5" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
-  <text x="605" y="110" text-anchor="middle" font-size="7" font-weight="700" fill="#1d4ed8">at every layer</text>
-  <text x="605" y="120" text-anchor="middle" font-size="6" fill="#3b82f6">(not just input)</text>
-
-  <rect x="355" y="130" width="160" height="24" rx="5" fill="#fef2f2" stroke="#f87171" stroke-width="1.5"/>
-  <text x="435" y="146" text-anchor="middle" font-size="8" font-weight="700" fill="#dc2626">Pre-RMSNorm</text>
-
-  <defs>
-    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
-    </marker>
-  </defs>
-</svg>
-<p class="caption">LLaMA's three key changes: Pre-normalization with RMSNorm (faster than LayerNorm), SwiGLU activation with 3 weight matrices in the FFN, and RoPE applied at every layer instead of absolute embeddings at input only.</p>
+<div class="arch-cards">
+  <div class="arch-card" style="background: #fef2f2; border-color: #fecaca;">
+    <div class="arch-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">1</div>
+    <h4>Pre-RMSNorm</h4>
+    <p style="font-weight: 600; color: #dc2626; margin-bottom: 0.25rem;">Replaces Post-LayerNorm</p>
+    <p>Normalizes <em>before</em> each sub-layer instead of after. Uses RMSNorm (no mean computation) for faster, more stable training.</p>
+  </div>
+  <div class="arch-card" style="background: #fff7ed; border-color: #fed7aa;">
+    <div class="arch-icon" style="background: linear-gradient(135deg, #f97316, #ea580c);">2</div>
+    <h4>SwiGLU Activation</h4>
+    <p style="font-weight: 600; color: #ea580c; margin-bottom: 0.25rem;">Replaces ReLU/GELU in FFN</p>
+    <p>Gated activation with 3 weight matrices instead of 2. Hidden dim = ceil(2/3 &times; 4d) rounded to nearest 256 = 11008.</p>
+  </div>
+  <div class="arch-card" style="background: #eff6ff; border-color: #bfdbfe;">
+    <div class="arch-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">3</div>
+    <h4>RoPE</h4>
+    <p style="font-weight: 600; color: #2563eb; margin-bottom: 0.25rem;">Replaces Absolute Position Embeddings</p>
+    <p>Rotary Position Embeddings applied at every layer. Encodes relative distance via rotation, not a one-time addition at input.</p>
+  </div>
 </div>
+<p class="caption" style="text-align:center; margin-top: 1rem;">LLaMA's three key modifications to the standard Transformer architecture.</p>
 
 <h3 id="rmsnorm-pre-normalization-for-stability">RMSNorm: Pre-Normalization for Stability</h3>
 <p>The original transformer applies Layer Normalization after each sub-layer (post-norm). LLaMA switches to <strong>pre-normalization</strong>: it normalizes the input of each sub-layer before the computation, not the output. And instead of standard Layer Norm, it uses RMSNorm.</p>
