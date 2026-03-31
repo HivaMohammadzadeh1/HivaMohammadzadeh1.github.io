@@ -257,10 +257,6 @@
 <h3 id="gpt-3-few-shot-learning-at-scale">GPT-3: Few-Shot Learning at Scale</h3>
 <p>GPT-3 took the same GPT-2 architecture and scaled it to 175 billion parameters -- 10x more than any previous non-sparse language model. The key insight was that at this scale, the model demonstrates remarkable few-shot learning: it can generate high-quality text for translation, question answering, and even programming tasks with little or no task-specific training data.</p>
 <p>GPT-3 also showed that scaling up language models greatly improves task-agnostic, few-shot performance, sometimes reaching competitiveness with prior state-of-the-art fine-tuning approaches. It can even perform zero-shot learning -- generating quality output for tasks it was never explicitly trained on.</p>
-<div class="diagram">
-  <img src="../images/cs199/page-11.png" alt="GPT-2 architecture and task-specific input formatting" loading="lazy">
-  <p class="caption">The GPT-2/GPT-3 architecture with task-specific input formatting for classification, entailment, similarity, and multiple choice. From my CS199 independent study.</p>
-</div>
 
 <h3 id="gpt-4-multimodal-and-human-level">GPT-4: Multimodal and Human-Level</h3>
 <p>GPT-4 extended the decoder-only lineage further into a large-scale multimodal model that accepts both image and text inputs. It exhibits human-level performance on various professional and academic benchmarks, including passing a simulated bar exam around the median of human test-takers. GPT-4 is also highly steerable -- users can explicitly instruct how they want the model to respond, improving prompt engineering significantly.</p>
@@ -271,10 +267,6 @@
 <li><strong>Causal Attention</strong>: Each query can only attend to keys and values at or before its position. Used in GPT-2/3/4. The triangular mask we discussed.</li>
 <li><strong>Triangle Attention</strong>: Each query attends to a subset of keys/values based on a maximum distance, forming a triangular pattern. Used to reduce computation while capturing long-range dependencies.</li>
 </ul>
-<div class="diagram">
-  <img src="../images/cs199/page-05.png" alt="Forward attention, causal attention, and their visualizations" loading="lazy">
-  <p class="caption">Self-attention visualization and causal vs full attention patterns. From my CS199 independent study at UC Berkeley.</p>
-</div>
 
 <p><em>This section draws from my <a href="https://github.com/HivaMohammadzadeh1/SupervisedIndependentStud">CS199 Supervised Independent Study</a> at UC Berkeley.</em></p>
 <hr />

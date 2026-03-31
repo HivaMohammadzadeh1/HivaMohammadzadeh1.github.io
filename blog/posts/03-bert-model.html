@@ -275,16 +275,8 @@
 <h2 id="historical-context-from-rnns-to-transformers-to-bert">Historical Context: From RNNs to Transformers to BERT</h2>
 <p>Before BERT, the NLP world relied on Recurrent Neural Networks (RNNs). RNNs had an encoder that took the input sequence and the previous hidden state to output the next hidden state, and a decoder that generated words one at a time. They worked, but they had serious problems: sequential processing made them slow to train and impossible to parallelize, they required fixed-order input processing, and they struggled with long-range dependencies.</p>
 <p>The 2017 "Attention is All You Need" paper changed everything. The Transformer replaced RNNs with self-attention, allowing the model to selectively attend to different parts of the input sequence regardless of position. This made it easier to model long-term dependencies and -- critically -- enabled parallel processing during training.</p>
-<div class="diagram">
-  <img src="../images/cs199/page-01.png" alt="The original Transformer architecture from Attention is All You Need" loading="lazy">
-  <p class="caption">The original Transformer architecture (Vaswani et al., 2017). BERT uses only the encoder side (left).</p>
-</div>
 
 <p>BERT took this encoder architecture and showed that bidirectional pre-training -- reading text in both directions simultaneously -- produced dramatically better representations than left-to-right or right-to-left approaches alone.</p>
-<div class="diagram">
-  <img src="../images/cs199/page-06.png" alt="Structure of the BERT model showing masked language modeling" loading="lazy">
-  <p class="caption">BERT's architecture: input tokens (some masked) flow through the Transformer encoder to produce contextualized representations. From my CS199 independent study at UC Berkeley.</p>
-</div>
 
 <h3 id="beyond-bert-roberta">Beyond BERT: RoBERTa</h3>
 <p>It is worth mentioning RoBERTa, which proposed several key improvements to BERT's pre-training:</p>
