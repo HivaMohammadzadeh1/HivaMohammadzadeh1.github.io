@@ -197,18 +197,61 @@
 <li><strong>Training a large language model from scratch?</strong> Use <strong>RMSNorm</strong>.</li>
 </ol>
 <h2 id="quick-reference">Quick Reference</h2>
-<div class="comparison">
-
-| Technique | Normalizes Over | Batch Dependent? | Best For | Test Time |
-|---|---|---|---|---|
-| **Batch Norm** | Mini-batch (N) per channel | Yes | CNNs, large batches | Running stats |
-| **Layer Norm** | All features per example [C,H,W] | No | Transformers, RNNs | Same formula |
-| **Group Norm** | Channel groups per example | No | CNNs, small batches | Same formula |
-| **RMSNorm** | All features (RMS only) | No | LLMs, high-variance data | Same formula |
-| **Instance Norm** | Per channel, per example | No | Style transfer | Same formula |
-| **Weight Norm** | Weight vectors | No | CNNs, smooth optimization | Same formula |
-
-</div>
+<table>
+<thead>
+<tr>
+<th>Technique</th>
+<th>Normalizes Over</th>
+<th>Batch Dependent?</th>
+<th>Best For</th>
+<th>Test Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Batch Norm</strong></td>
+<td>Mini-batch (N) per channel</td>
+<td>Yes</td>
+<td>CNNs, large batches</td>
+<td>Running stats</td>
+</tr>
+<tr>
+<td><strong>Layer Norm</strong></td>
+<td>All features per example [C,H,W]</td>
+<td>No</td>
+<td>Transformers, RNNs</td>
+<td>Same formula</td>
+</tr>
+<tr>
+<td><strong>Group Norm</strong></td>
+<td>Channel groups per example</td>
+<td>No</td>
+<td>CNNs, small batches</td>
+<td>Same formula</td>
+</tr>
+<tr>
+<td><strong>RMSNorm</strong></td>
+<td>All features (RMS only)</td>
+<td>No</td>
+<td>LLMs, high-variance data</td>
+<td>Same formula</td>
+</tr>
+<tr>
+<td><strong>Instance Norm</strong></td>
+<td>Per channel, per example</td>
+<td>No</td>
+<td>Style transfer</td>
+<td>Same formula</td>
+</tr>
+<tr>
+<td><strong>Weight Norm</strong></td>
+<td>Weight vectors</td>
+<td>No</td>
+<td>CNNs, smooth optimization</td>
+<td>Same formula</td>
+</tr>
+</tbody>
+</table>
 
 <hr />
 <p><em>This post is based on my presentation "Survey of Normalization Techniques" at Berkeley EECS. The original slides, including all diagrams and the full algorithm pseudocode, are available in <a href="../Presentations-main/Normalization_Techniques.pdf">Normalization_Techniques.pdf</a>.</em></p>

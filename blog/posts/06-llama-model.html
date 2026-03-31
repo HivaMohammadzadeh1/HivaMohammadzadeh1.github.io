@@ -38,14 +38,14 @@
 <p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
 <div class="tldr-box">
 
-**TL;DR:** LLaMA proves that you do not need the biggest model to get the best results -- you need a smaller model trained on more and better data for longer. It is a family of encoder-decoder transformers (7B to 65B parameters) trained entirely on publicly available datasets, designed to be cheap at inference. The key architectural changes over the original transformer: RMSNorm for pre-normalization, SwiGLU activation in the feed-forward network (which introduces a third weight matrix), and Rotary Positional Embeddings (RoPE) instead of absolute position encodings. These choices make LLaMA faster, more stable to train, and fully open-source compatible.
+<strong>TL;DR:</strong> LLaMA proves that you do not need the biggest model to get the best results -- you need a smaller model trained on more and better data for longer. It is a family of decoder-only transformers (7B to 65B parameters) trained entirely on publicly available datasets, designed to be cheap at inference. The key architectural changes over the original transformer: RMSNorm for pre-normalization, SwiGLU activation in the feed-forward network (which introduces a third weight matrix), and Rotary Positional Embeddings (RoPE) instead of absolute position encodings. These choices make LLaMA faster, more stable to train, and fully open-source compatible.
 
 </div>
 
 <hr />
 <h2 id="the-llama-philosophy-open-data-efficient-inference">The LLaMA Philosophy: Open Data, Efficient Inference</h2>
 <p>The central insight behind LLaMA is counterintuitive: the best-performing language models are not the largest ones. They are smaller models trained on more data, better data, and for longer. This flips the scaling mindset that dominated the field for years. Instead of throwing more parameters at the problem, LLaMA asks: what if we throw more compute at training a reasonably sized model?</p>
-<p>LLaMA is a collection of foundation language models ranging from 7B to 65B parameters. It works the way all autoregressive models work -- it takes a sequence of words as input and predicts the next word, recursively generating text one token at a time. What sets it apart is the training philosophy and the architectural refinements that make it efficient.</p>
+<p>LLaMA is a collection of decoder-only foundation language models ranging from 7B to 65B parameters. It works the way all autoregressive models work -- it takes a sequence of words as input and predicts the next word, recursively generating text one token at a time. What sets it apart is the training philosophy and the architectural refinements that make it efficient.</p>
 <p>Two commitments define LLaMA. First, the model is trained exclusively on publicly available data: CommonCrawl, C4, GitHub, Wikipedia, and others. No proprietary datasets. This makes LLaMA fully compatible with open-sourcing, which is why it became the backbone of the open-source LLM ecosystem. Second, the goal is to make models that are cheaper at inference. A 13B model that matches GPT-3's performance at a fraction of the serving cost is more valuable in practice than a 175B model that requires a cluster to run.</p>
 <div class="diagram">
   <img src="../images/details_of_the_llama_model/page-02.png" alt="LLaMA model family overview showing parameter counts and training data sources" loading="lazy">
@@ -177,13 +177,13 @@
 
 <hr />
 <h2 id="the-architecture-modified-transformer">The Architecture: Modified Transformer</h2>
-<p>LLaMA builds on the encoder-decoder transformer from "Attention Is All You Need" with the three modifications above baked in. The optimizer is AdamW. Beyond the architectural changes, the authors also apply several efficiency techniques: optimized multi-head attention to reduce memory usage and runtime, checkpointing activations (saving activations during the forward pass so they do not need to be recomputed during the backward pass), and model and sequence parallelism to reduce memory consumption across devices.</p>
+<p>LLaMA is a decoder-only transformer, like GPT-2, with the three modifications above baked in. The optimizer is AdamW. Beyond the architectural changes, the authors also apply several efficiency techniques: optimized multi-head attention to reduce memory usage and runtime, checkpointing activations (saving activations during the forward pass so they do not need to be recomputed during the backward pass), and model and sequence parallelism to reduce memory consumption across devices.</p>
 <div class="diagram">
-  <img src="../images/details_of_the_llama_model/page-08.png" alt="LLaMA Encoder-Decoder architecture showing RMS Norm before Self-Attention, RMS Norm before Cross Attention, RMS Norm before Feed Forward, with RoPE embeddings at input" loading="lazy">
-  <p class="caption">LLaMA Encoder-Decoder architecture showing RMS Norm before Self-Attention, RMS Norm before Cross Attention, RMS Norm before Feed Forward, with RoPE embeddings at input</p>
+  <img src="../images/details_of_the_llama_model/page-08.png" alt="LLaMA decoder-only architecture showing RMS Norm before Masked Self-Attention and RMS Norm before Feed Forward, with RoPE embeddings applied at every layer" loading="lazy">
+  <p class="caption">LLaMA decoder-only architecture showing RMS Norm before Masked Self-Attention and RMS Norm before Feed Forward, with RoPE embeddings applied at every layer</p>
 </div>
 
-<p>The pattern in each encoder or decoder block is: RMS Norm before every sub-layer (self-attention, cross-attention, feed-forward), with the SwiGLU activation inside the feed-forward network and RoPE applied to the attention queries and keys. Residual connections wrap each sub-layer as usual.</p>
+<p>The pattern in each decoder block is: RMS Norm before every sub-layer (masked self-attention, feed-forward), with the SwiGLU activation inside the feed-forward network and RoPE applied to the attention queries and keys. Residual connections wrap each sub-layer as usual.</p>
 <hr />
 <h2 id="the-swiglu-feed-forward-network-in-detail">The SwiGLU Feed-Forward Network in Detail</h2>
 <div class="flow-diagram">
@@ -233,14 +233,20 @@
 <hr />
 <h2 id="weight-matrix-dimensions">Weight Matrix Dimensions</h2>
 <p>For the LLaMA-7B configuration with sequence length L = 128, embedding dimension Ed = 4096, 32 attention heads (h = 32), head dimension d = 128, and FFN hidden dimension Fl = 11008:</p>
-<p><strong>Input Embedding:</strong>
-- Shape: (batch_size, 128, 4096)
-- Per attention head: (batch_size, 128, 4096/32) = (batch_size, 128, 128, 32)</p>
-<p><strong>Self-Attention Weight Matrices (Wq, Wk, Wv, Wo):</strong>
-- All four: (batch_size, 4096, 4096)</p>
-<p><strong>Query, Key, Value Matrices:</strong>
-- Full: (batch_size, 128, 4096)
-- Per head: (batch_size, 128, 128, 32)</p>
+<p><strong>Input Embedding:</strong></p>
+<ul>
+<li>Shape: (batch_size, 128, 4096)</li>
+<li>Per attention head: (batch_size, 128, 4096/32) = (batch_size, 128, 128, 32)</li>
+</ul>
+<p><strong>Self-Attention Weight Matrices (Wq, Wk, Wv, Wo):</strong></p>
+<ul>
+<li>All four: (4096, 4096)</li>
+</ul>
+<p><strong>Query, Key, Value Matrices:</strong></p>
+<ul>
+<li>Full: (batch_size, 128, 4096)</li>
+<li>Per head: (batch_size, 128, 128, 32)</li>
+</ul>
 <p><strong>Feed-Forward Network (three weight matrices):</strong></p>
 <table>
 <thead>
@@ -271,31 +277,18 @@
 <p>The fact that there are three weight matrices in the FFN instead of the standard two is the direct consequence of the SwiGLU gating mechanism. The first and third matrices create the two parallel paths; the second matrix projects back to the model dimension.</p>
 <hr />
 <h2 id="full-computation-flow">Full Computation Flow</h2>
-<h3 id="encoder">Encoder</h3>
-<p>The encoder processes the full input sequence with the following flow (L = 128, Ed = 4096, h = 32, d = 128, Fl = 11008):</p>
+<p>Each decoder block processes the sequence with the following flow (L = 128, Ed = 4096, h = 32, d = 128, Fl = 11008):</p>
 <ol>
 <li>Input X (L, Ed) passes through <strong>RMS Norm</strong>.</li>
-<li>Multi-head self-attention with RoPE on queries and keys. The attention is computed with optimized memory usage (column-parallel projections for Q, K, V).</li>
+<li><strong>Masked multi-head self-attention</strong> with RoPE on queries and keys. A causal mask prevents attending to future tokens. The attention is computed with optimized memory usage (column-parallel projections for Q, K, V).</li>
 <li><strong>Residual connection</strong> adds the attention output back to the input.</li>
 <li>The result passes through another <strong>RMS Norm</strong>.</li>
 <li>The SwiGLU feed-forward network: two column-parallel linear projections (4096 &rarr; 11008), SwiGLU gating, then a row-parallel projection (11008 &rarr; 4096).</li>
 <li><strong>Residual connection</strong> adds the FFN output back.</li>
 </ol>
 <div class="diagram">
-  <img src="../images/details_of_the_llama_model/page-11.png" alt="Computation diagram: Full LLaMA encoder flow from X(L,Ed) through RMS Norm, self-attention with RoPE, residual, RMS Norm, SwiGLU FFN with parallel linear paths, residual, to output" loading="lazy">
-  <p class="caption">Computation diagram: Full LLaMA encoder flow from X(L,Ed) through RMS Norm, self-attention with RoPE, residual, RMS Norm, SwiGLU FFN with parallel linear paths, residual, to output</p>
-</div>
-
-<h3 id="decoder">Decoder</h3>
-<p>The decoder adds masked self-attention and cross-attention, all with pre-normalization:</p>
-<ol>
-<li>Input passes through <strong>RMS Norm</strong> &rarr; <strong>Masked self-attention</strong> (causal mask prevents attending to future tokens) &rarr; residual connection.</li>
-<li>The result passes through <strong>RMS Norm</strong> &rarr; <strong>Cross-attention</strong> (queries come from the decoder output; keys and values come from the encoder hidden states) &rarr; residual connection.</li>
-<li>The result passes through <strong>RMS Norm</strong> &rarr; <strong>SwiGLU feed-forward network</strong> (same structure as the encoder FFN) &rarr; residual connection.</li>
-</ol>
-<div class="diagram">
-  <img src="../images/details_of_the_llama_model/page-12.png" alt="Computation diagram: Full LLaMA decoder flow with Masked Self-Attention, Cross Attention (Q from decoder, K/V from encoder), and SwiGLU FFN, all with RMS Norm pre-normalization" loading="lazy">
-  <p class="caption">Computation diagram: Full LLaMA decoder flow with Masked Self-Attention, Cross Attention (Q from decoder, K/V from encoder), and SwiGLU FFN, all with RMS Norm pre-normalization</p>
+  <img src="../images/details_of_the_llama_model/page-11.png" alt="Computation diagram: Full LLaMA decoder block flow from X(L,Ed) through RMS Norm, masked self-attention with RoPE, residual, RMS Norm, SwiGLU FFN with parallel linear paths, residual, to output" loading="lazy">
+  <p class="caption">Computation diagram: Full LLaMA decoder block flow from X(L,Ed) through RMS Norm, masked self-attention with RoPE, residual, RMS Norm, SwiGLU FFN with parallel linear paths, residual, to output</p>
 </div>
 
 <hr />

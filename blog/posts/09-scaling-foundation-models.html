@@ -38,7 +38,7 @@
 <p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
 <div class="tldr-box">
 
-**TL;DR:** Scale changes everything. GPT-3 showed that a 175-billion-parameter model can perform tasks it was never explicitly trained on -- just from a handful of examples in the prompt. PaLM pushed to 540 billion parameters and broke through on multi-step reasoning. GPT-4 added multimodal input and hit human-level performance on professional benchmarks like the bar exam. These are not just bigger models doing the same thing slightly better. At each scale jump, qualitatively new capabilities emerge. This post covers the scaling trajectory from GPT-3 through PaLM to GPT-4, the opportunities foundation models unlock in healthcare, education, and finance, and the real risks -- bias, power concentration, and accountability gaps -- that come with them.
+<strong>TL;DR:</strong> Scale changes everything. GPT-3 showed that a 175-billion-parameter model can perform tasks it was never explicitly trained on -- just from a handful of examples in the prompt. PaLM pushed to 540 billion parameters and broke through on multi-step reasoning. GPT-4 added multimodal input and hit human-level performance on professional benchmarks like the bar exam. These are not just bigger models doing the same thing slightly better. At each scale jump, qualitatively new capabilities emerge. This post covers the scaling trajectory from GPT-3 through PaLM to GPT-4, the opportunities foundation models unlock in healthcare, education, and finance, and the real risks -- bias, power concentration, and accountability gaps -- that come with them.
 
 </div>
 
@@ -169,10 +169,10 @@ GPT-3's core contribution was not the architecture (it is essentially a scaled-u
 
 </div>
 
-<p>This changed the economics of NLP. Instead of collecting labeled data and training a model for every task, you could use a single large model and steer it with prompts. The previous post on <a href="08-prompt-tuning.md">prompt tuning</a> covers the techniques that evolved from this realization.</p>
+<p>This changed the economics of NLP. Instead of collecting labeled data and training a model for every task, you could use a single large model and steer it with prompts. The previous post on <a href="08-prompt-tuning.html">prompt tuning</a> covers the techniques that evolved from this realization.</p>
 <hr />
 <h2 id="palm-540-billion-parameters-and-the-pathways-system">PaLM: 540 Billion Parameters and the Pathways System</h2>
-<p>If GPT-3 proved scale matters, PaLM proved it matters even more than people expected. PaLM (Pathway Language Model) is a 540-billion-parameter, dense decoder-only Transformer that pushed the frontier on what a single language model can do.</p>
+<p>If GPT-3 proved scale matters, PaLM proved it matters even more than people expected. PaLM (Pathways Language Model) is a 540-billion-parameter, dense decoder-only Transformer that pushed the frontier on what a single language model can do.</p>
 <p>What makes PaLM architecturally interesting is not just the parameter count. It is how the model was trained and what infrastructure made it possible.</p>
 <h3 id="the-pathways-system">The Pathways System</h3>
 <p>PaLM was trained with the Pathways system, which enables efficiently training a single model across multiple TPU v4 Pods. This was the first large-scale use of Pathways, scaling to 6,144 TPU chips -- the largest TPU-based system configuration at the time. The system uses a hierarchical architecture with data parallelism at the Pod level across two Cloud TPU v4 Pods, combined with standard data and model parallelism within each Pod.</p>
@@ -354,7 +354,7 @@ The research community has called for increased transparency, accountability, an
 <p><strong>Alignment and safety are engineering problems, not afterthoughts.</strong> GPT-4's post-training alignment -- improving factuality, reducing harmful outputs, increasing steerability -- is as important as the pre-training. Building capable models is only half the job.</p>
 </li>
 </ol>
-<p>The models covered in this series -- from <a href="01-activation-functions.md">activation functions</a> through <a href="03-bert-model.md">BERT</a>, <a href="04-gpt2-model.md">GPT-2</a>, <a href="05-t5-model.md">T5</a>, <a href="06-llama-model.md">LLaMA</a>, <a href="07-glue-superglue.md">benchmarks</a>, <a href="08-prompt-tuning.md">prompt tuning</a>, and now scaling -- trace a clear arc. We went from building individual components to assembling architectures to scaling those architectures until new capabilities emerged. The question now is not "can we build more powerful models?" We can. The question is "what do we do with them?"</p>
+<p>The models covered in this series -- from <a href="01-activation-functions.html">activation functions</a> through <a href="03-bert-model.html">BERT</a>, <a href="04-gpt2-model.html">GPT-2</a>, <a href="05-t5-model.html">T5</a>, <a href="06-llama-model.html">LLaMA</a>, <a href="07-glue-superglue.html">benchmarks</a>, <a href="08-prompt-tuning.html">prompt tuning</a>, and now scaling -- trace a clear arc. We went from building individual components to assembling architectures to scaling those architectures until new capabilities emerged. The question now is not "can we build more powerful models?" We can. The question is "what do we do with them?"</p>
 <hr />
 <p><em>Based on my <a href="https://github.com/HivaMohammadzadeh1/SupervisedIndependentStud">CS199 Supervised Independent Study</a> at UC Berkeley and the original <a href="https://github.com/HivaMohammadzadeh1/Presentations">Presentations</a> I created in 2023.</em></p>
   </article>

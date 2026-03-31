@@ -38,7 +38,7 @@
 <p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
 <div class="tldr-box">
 
-**TL;DR:** Fine-tuning every parameter of a large language model for each new task is expensive and inefficient. Prompt tuning offers a better path: freeze the model, learn a small set of continuous "soft prompt" vectors, and get competitive performance at a fraction of the cost. This post walks through the evolution from full fine-tuning to hard prompts to soft prompts, covers prefix tuning and prompt tuning (they are different), explains how prompt ensembling reduces hallucination, and shows how chain-of-thought prompting unlocks reasoning. The MedPrompt case study ties it all together -- GPT-4 with smart prompting strategies hits 90.2% on medical exam questions, outperforming fine-tuned specialist models.
+<strong>TL;DR:</strong> Fine-tuning every parameter of a large language model for each new task is expensive and inefficient. Prompt tuning offers a better path: freeze the model, learn a small set of continuous "soft prompt" vectors, and get competitive performance at a fraction of the cost. This post walks through the evolution from full fine-tuning to hard prompts to soft prompts, covers prefix tuning and prompt tuning (they are different), explains how prompt ensembling reduces hallucination, and shows how chain-of-thought prompting unlocks reasoning. The MedPrompt case study ties it all together -- GPT-4 with smart prompting strategies hits 90.2% on medical exam questions, outperforming fine-tuned specialist models.
 
 </div>
 
@@ -106,13 +106,15 @@
 </div>
 
 <p>This is a powerful result. It means that for the largest models -- the ones where fine-tuning is most expensive -- prompt tuning is both the cheapest and the most effective alternative.</p>
-<p><strong>Summary of pros and cons for prompt tuning:</strong>
-- You can tune a massive model with a tiny number of parameters
-- You do not need large labeled datasets
-- It is faster and more efficient than fine-tuning while achieving comparable accuracy
-- It is universally effective across model scales and NLU tasks
-- It supports multi-task and continual learning natively
-- The main downside: soft prompts remain uninterpretable</p>
+<p><strong>Summary of pros and cons for prompt tuning:</strong></p>
+<ul>
+<li>You can tune a massive model with a tiny number of parameters</li>
+<li>You do not need large labeled datasets</li>
+<li>It is faster and more efficient than fine-tuning while achieving comparable accuracy</li>
+<li>It is universally effective across model scales and NLU tasks</li>
+<li>It supports multi-task and continual learning natively</li>
+<li>The main downside: soft prompts remain uninterpretable</li>
+</ul>
 <hr />
 <h2 id="prompt-ensembling-boosting-and-bagging-for-prompts">Prompt Ensembling: Boosting and Bagging for Prompts</h2>
 <p>Single prompts, even well-tuned ones, can be unstable. Small perturbations in the input or the prompt can flip the output. This is where prompt ensembling comes in -- using multiple prompts together to get more reliable predictions.</p>

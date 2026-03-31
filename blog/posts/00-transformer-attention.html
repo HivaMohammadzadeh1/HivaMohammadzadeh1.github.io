@@ -38,7 +38,7 @@
 <p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
 <div class="tldr-box">
 
-**TL;DR:** The Transformer, introduced in the 2017 paper "Attention is All You Need," replaced recurrent and convolutional architectures with a purely attention-based model. The core idea: instead of processing tokens sequentially, use self-attention to let every token attend to every other token in parallel. This eliminated the sequential bottleneck of RNNs, made long-range dependencies trivial to capture, and enabled massive parallelism during training. The result was faster training, higher accuracy, and a single architecture that spawned BERT, GPT, T5, LLaMA, and essentially every major language model since. This post breaks down the architecture, the three attention patterns, and the three model families that emerged from it.
+<strong>TL;DR:</strong> The Transformer, introduced in the 2017 paper "Attention is All You Need," replaced recurrent and convolutional architectures with a purely attention-based model. The core idea: instead of processing tokens sequentially, use self-attention to let every token attend to every other token in parallel. This eliminated the sequential bottleneck of RNNs, made long-range dependencies trivial to capture, and enabled massive parallelism during training. The result was faster training, higher accuracy, and a single architecture that spawned BERT, GPT, T5, LLaMA, and essentially every major language model since. This post breaks down the architecture, the three attention patterns, and the three model families that emerged from it.
 
 </div>
 
@@ -60,7 +60,7 @@
 <p>The attention mechanism introduced in 2015 by Bahdanau et al. ("Neural machine translation by jointly learning to align and translate") was the first major fix. It allowed the decoder to look back at different parts of the source sentence at each decoding step, rather than relying on a single compressed vector. That was a significant improvement, but the underlying architecture was still recurrent. The sequential bottleneck remained.</p>
 <div class="key-insight">
 
-**The fundamental limitation:** RNNs compress the entire input into a fixed-length hidden state, then process it sequentially. No amount of attention bolted onto an RNN fully solves the parallelism problem.
+<strong>The fundamental limitation:</strong> RNNs compress the entire input into a fixed-length hidden state, then process it sequentially. No amount of attention bolted onto an RNN fully solves the parallelism problem.
 
 </div>
 
@@ -211,7 +211,7 @@
 
 <div class="key-insight">
 
-**The key intuition:** Queries ask "what am I looking for?" Keys answer "what do I contain?" Values carry "what information do I provide?" The dot product between query and key measures relevance. The weighted sum of values produces a context-aware representation.
+<strong>The key intuition:</strong> Queries ask "what am I looking for?" Keys answer "what do I contain?" Values carry "what information do I provide?" The dot product between query and key measures relevance. The weighted sum of values produces a context-aware representation.
 
 </div>
 
@@ -332,7 +332,7 @@
 <p>It is the natural choice for tasks where the input and output are structurally different: machine translation (input in one language, output in another), image captioning (input is an image, output is text), and summarization (input is long text, output is short text).</p>
 <div class="key-insight">
 
-**How to choose:** Need to understand and classify? Encoder-only. Need to generate? Decoder-only. Need to transform one sequence into a different sequence? Encoder-decoder. In practice, decoder-only models have become dominant for general-purpose use because they can be scaled effectively and handle a wide range of tasks through prompting.
+<strong>How to choose:</strong> Need to understand and classify? Encoder-only. Need to generate? Decoder-only. Need to transform one sequence into a different sequence? Encoder-decoder. In practice, decoder-only models have become dominant for general-purpose use because they can be scaled effectively and handle a wide range of tasks through prompting.
 
 </div>
 
@@ -357,7 +357,7 @@
 <p>Then came the instruction-tuning era: InstructGPT, ChatGPT, LLaMA, and the models that brought large language models into mainstream use. Every one of them is a Transformer at its core. The architecture from the 2017 paper -- self-attention, multi-head attention, feed-forward layers, residual connections, layer normalization -- remains fundamentally unchanged. What has changed is scale, training data, and training methodology.</p>
 <div class="key-insight">
 
-**The 2017 paper's lasting contribution** is not any single technique. It is the demonstration that attention alone, without recurrence or convolution, is sufficient for state-of-the-art sequence modeling. That insight unlocked everything that followed.
+<strong>The 2017 paper's lasting contribution</strong> is not any single technique. It is the demonstration that attention alone, without recurrence or convolution, is sufficient for state-of-the-art sequence modeling. That insight unlocked everything that followed.
 
 </div>
 

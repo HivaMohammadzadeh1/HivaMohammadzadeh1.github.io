@@ -38,7 +38,7 @@
 <p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
 <div class="tldr-box">
 
-**TL;DR:** BERT is a pre-trained, encoder-only transformer that reads text bidirectionally -- it sees the full context around every token at once. The base model stacks 12 transformer blocks, each with multi-head self-attention and a position-wise feed-forward network, operating on 128 tokens with a 768-dimensional embedding. Training happens in two phases: masked language modeling (MLM) and next sentence prediction (NSP) for pre-training, then task-specific fine-tuning. A single transformer block runs about 1.86 billion FLOPs, dominated by the feed-forward network. Understanding these dimensions and computations is the key to reasoning about BERT's cost and behavior.
+<strong>TL;DR:</strong> BERT is a pre-trained, encoder-only transformer that reads text bidirectionally -- it sees the full context around every token at once. The base model stacks 12 transformer blocks, each with multi-head self-attention and a position-wise feed-forward network, operating on 128 tokens with a 768-dimensional embedding. Training happens in two phases: masked language modeling (MLM) and next sentence prediction (NSP) for pre-training, then task-specific fine-tuning. A single transformer block runs about 1.86 billion FLOPs, dominated by the feed-forward network. Understanding these dimensions and computations is the key to reasoning about BERT's cost and behavior.
 
 </div>
 
@@ -168,19 +168,19 @@
 <tbody>
 <tr>
 <td><strong>W<sub>q</sub></strong> (Query)</td>
-<td>(batch_size, 768, 768)</td>
+<td>(768, 768)</td>
 </tr>
 <tr>
 <td><strong>W<sub>k</sub></strong> (Key)</td>
-<td>(batch_size, 768, 768)</td>
+<td>(768, 768)</td>
 </tr>
 <tr>
 <td><strong>W<sub>v</sub></strong> (Value)</td>
-<td>(batch_size, 768, 768)</td>
+<td>(768, 768)</td>
 </tr>
 <tr>
 <td><strong>W<sub>o</sub></strong> (Output)</td>
-<td>(batch_size, 768, 768)</td>
+<td>(768, 768)</td>
 </tr>
 </tbody>
 </table>

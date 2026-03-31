@@ -38,7 +38,7 @@
 <p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
 <div class="tldr-box">
 
-**TL;DR:** T5 reframes every NLP task -- translation, summarization, classification, question answering -- as a text-to-text problem. It uses a full encoder-decoder transformer with 12 blocks, pre-trained on C4 using span corruption and fine-tuned with task-specific text prefixes. The encoder uses bidirectional self-attention (like BERT), the decoder uses causal masked self-attention (like GPT-2), and cross-attention is the bridge that lets the decoder attend to the full encoded input. If you understand cross-attention, you understand what makes T5 different from encoder-only and decoder-only models.
+<strong>TL;DR:</strong> T5 reframes every NLP task -- translation, summarization, classification, question answering -- as a text-to-text problem. It uses a full encoder-decoder transformer with 12 blocks, pre-trained on C4 using span corruption and fine-tuned with task-specific text prefixes. The encoder uses bidirectional self-attention (like BERT), the decoder uses causal masked self-attention (like GPT-2), and cross-attention is the bridge that lets the decoder attend to the full encoded input. If you understand cross-attention, you understand what makes T5 different from encoder-only and decoder-only models.
 
 </div>
 
@@ -146,8 +146,8 @@
 <h2 id="training-span-corruption-and-prefix-conditioning">Training: Span Corruption and Prefix Conditioning</h2>
 <p>T5's training happens in two phases, and both are worth understanding.</p>
 <h3 id="pre-training-on-c4">Pre-Training on C4</h3>
-<p>T5 is pre-trained on C4 (Colossal Clean Crawled Corpus) using a span corruption objective. In the original text, words are masked out independently and uniformly at random, then replaced with unique sentinel tokens. The model is trained to predict those sentinel tokens and the missing text they represent. This is essentially a fill-in-the-blanks task: given a sentence with holes punched in it, reconstruct what was removed.</p>
-<p>This is different from BERT's masked language modeling in an important way. BERT masks individual tokens and predicts them independently. T5 masks contiguous spans and generates the missing content sequentially, which trains the decoder to produce coherent multi-token outputs from the start.</p>
+<p>T5 is pre-trained on C4 (Colossal Clean Crawled Corpus) using a span corruption objective. Contiguous spans of tokens are selected and replaced with unique sentinel tokens. The model is trained to predict those sentinel tokens and the missing text they represent. This is essentially a fill-in-the-blanks task: given a sentence with holes punched in it, reconstruct what was removed.</p>
+<p>This is different from BERT's masked language modeling in an important way. BERT masks individual tokens and predicts them independently. T5 masks contiguous spans -- multiple adjacent tokens at once -- and generates the missing content sequentially, which trains the decoder to produce coherent multi-token outputs from the start.</p>
 <h3 id="fine-tuning-with-prefix-conditioning">Fine-Tuning with Prefix Conditioning</h3>
 <p>Once pre-trained, T5 is fine-tuned on specific downstream tasks by converting every task into text-to-text format. Each task is specified using a text prefix that is prepended to the input before feeding it into the model. During fine-tuning, the model learns to generate output text that corresponds to the specified task, conditioned on both the input text and the task prefix. The prefix acts as a soft routing mechanism -- it tells the model what kind of transformation to apply without any architectural changes.</p>
 <hr />

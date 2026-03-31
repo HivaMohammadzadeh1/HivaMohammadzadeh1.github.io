@@ -38,7 +38,7 @@
 <p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
 <div class="tldr-box">
 
-**TL;DR:** GPT-2 is a decoder-only transformer that generates text one token at a time using masked self-attention. Unlike BERT, which looks at the full sequence in both directions, GPT-2 enforces a strict causal mask so the model can only attend to past tokens -- this is what makes autoregressive generation possible. The architecture is a stack of 12 transformer decoder blocks, each combining masked multi-head self-attention with a position-wise feed-forward network. For GPT-2 Small, the key numbers are: 128 tokens, 768 embedding dimension, 12 attention heads, 3072 FFN filter size. Total per-block compute comes to roughly 1.5 billion FLOPs, with the feed-forward network dominating the cost.
+<strong>TL;DR:</strong> GPT-2 is a decoder-only transformer that generates text one token at a time using masked self-attention. Unlike BERT, which looks at the full sequence in both directions, GPT-2 enforces a strict causal mask so the model can only attend to past tokens -- this is what makes autoregressive generation possible. The architecture is a stack of 12 transformer decoder blocks, each combining masked multi-head self-attention with a position-wise feed-forward network. For GPT-2 Small, the key numbers are: 128 tokens, 768 embedding dimension, 12 attention heads, 3072 FFN filter size. Total per-block compute comes to roughly 1.86 billion FLOPs, with the feed-forward network dominating the cost.
 
 </div>
 
@@ -220,7 +220,7 @@
 <p>The concrete dimensions matter when you are implementing this or counting compute. For GPT-2 Small:</p>
 <ul>
 <li><strong>Input embedding:</strong> (batch_size, 128, 768), which can be reshaped as (batch_size, 128, 64, 12) for parallel processing across the 12 attention heads.</li>
-<li><strong>Projection weight matrices (Wq, Wk, Wv, Wo):</strong> Each is (batch_size, 768, 768). These project the input into the query, key, value, and output spaces.</li>
+<li><strong>Projection weight matrices (Wq, Wk, Wv, Wo):</strong> Each is (768, 768). These project the input into the query, key, value, and output spaces.</li>
 <li><strong>Per-head Q, K, V matrices:</strong> Query is (batch_size, 1 token, 768) or equivalently (batch_size, 128, 64, 12). Key and Value are (batch_size, sequence_length, 768) or (batch_size, 128, 64, 12).</li>
 <li><strong>Feed-forward weights:</strong> The first dense layer is (768, 3072) and the second dense layer is (3072, 768).</li>
 </ul>
@@ -277,19 +277,19 @@
 <p>Understanding compute cost matters when you are choosing model sizes, planning training runs, or comparing architectures. Here is the FLOP breakdown for one forward pass through GPT-2 Small.</p>
 <h3 id="attention-block-flops">Attention Block FLOPs</h3>
 <p><strong>Weight matrix projections (Q, K, V):</strong></p>
-<p>3 x 128 x 768 x 768 x 2 = <strong>301,989,888 FLOPs</strong></p>
+<p>3 x 128 x 768 x 768 x 2 = <strong>452,984,832 FLOPs</strong></p>
 <p>These are the three matrix multiplications that project the input into query, key, and value spaces. The factor of 2 accounts for the multiply-accumulate operations.</p>
 <p><strong>Masked Multi-Head Self-Attention (for 12 heads):</strong></p>
 <ul>
-<li>Q * K^T: 2 x 12 x L(position-dependent) x 64 FLOPs</li>
-<li>Mask application: 1 x 128 x 128 x 2 FLOPs</li>
-<li>Softmax * V: 2 x 12 x 128 x 64 FLOPs</li>
-<li>Concatenation + Wo projection: 2 x 128 x 768 x 768 FLOPs</li>
+<li>Q * K^T: 2 x 12 x 128 x 64 x 128 = 25,165,824 FLOPs</li>
+<li>Scores * V: 2 x 12 x 128 x 128 x 64 = 25,165,824 FLOPs</li>
+<li>Wo projection: 2 x 128 x 768 x 768 = 150,994,944 FLOPs</li>
 </ul>
-<p>Total attention computation: <strong>1,605,632 FLOPs</strong></p>
+<p>Total MHA: <strong>201,326,592 FLOPs</strong></p>
+<p>Note: the causal mask zeroes out future positions but does not reduce the FLOP count in practice -- the full matrix multiplications are computed and then masked.</p>
 <h3 id="feed-forward-network-flops">Feed-Forward Network FLOPs</h3>
 <p>128 x 768 x 3072 x 2 x 2 + 128 = <strong>1,207,959,552 FLOPs</strong></p>
-<p>The two factors of 2 account for the two linear layers (up-projection and down-projection) and the multiply-accumulate operations. The FFN dominates the compute -- it accounts for roughly 80% of the total FLOPs per block.</p>
+<p>The two factors of 2 account for the two linear layers (up-projection and down-projection) and the multiply-accumulate operations. The FFN dominates the compute -- it accounts for roughly 65% of the total FLOPs per block.</p>
 <h3 id="total-for-12-transformer-blocks">Total for 12 Transformer Blocks</h3>
 <table>
 <thead>
@@ -305,21 +305,21 @@
 </tr>
 <tr>
 <td>Multi-Head Attention</td>
-<td>1,605,632</td>
+<td>201,326,592</td>
 </tr>
 <tr>
-<td>Weight matrices (Q, K, V) + projection</td>
-<td>1,179,648 + 301,989,888</td>
+<td>Weight matrices (Q, K, V)</td>
+<td>452,984,832</td>
 </tr>
 <tr>
 <td><strong>Total per block</strong></td>
-<td><strong>~1,512,734,848</strong></td>
+<td><strong>~1,862,270,976</strong></td>
 </tr>
 </tbody>
 </table>
-<p>Multiply by 12 blocks for the full model forward pass: roughly <strong>18.15 billion FLOPs</strong>.</p>
+<p>Multiply by 12 blocks for the full model forward pass: roughly <strong>22.3 billion FLOPs</strong>. This matches BERT Base, which has the same layer configuration and dimensions -- the causal mask changes what the model can see, but not the compute cost.</p>
 <h3 id="comparison-with-bert">Comparison with BERT</h3>
-<p>BERT-base has a similar parameter count and layer configuration (12 layers, 768 embedding, 12 heads), but there is one key difference in the attention computation: BERT uses full bidirectional attention (no mask), while GPT-2 uses masked attention. The mask itself does not add significant compute -- it is just a comparison and assignment operation. The real difference is architectural: BERT processes the full sequence simultaneously for understanding, while GPT-2 generates one token at a time for generation. The per-layer FLOP counts are nearly identical; the difference is in how and when the compute is used.</p>
+<p>BERT Base has the same layer configuration (12 layers, 768 embedding, 12 heads, 3072 FFN), so the per-block FLOP counts are nearly identical. The key difference is architectural, not computational: BERT uses full bidirectional attention (no mask) and processes the full sequence simultaneously for understanding, while GPT-2 uses causal masked attention and generates one token at a time. The mask itself does not significantly change the compute -- it is just a comparison and assignment operation applied to the attention scores before softmax.</p>
 <hr />
 <h2 id="the-bigger-picture-from-gpt-2-to-gpt-3-to-gpt-4">The Bigger Picture: From GPT-2 to GPT-3 to GPT-4</h2>
 <p>Understanding GPT-2's architecture matters because it is the blueprint for everything that followed. The decoder-only, autoregressive design with the causal mask scales remarkably well.</p>
@@ -352,7 +352,7 @@
 <ul>
 <li><strong>GPT-2 is decoder-only and autoregressive.</strong> It generates one token at a time, always looking backward. This is the fundamental architectural choice that separates it from encoder models like BERT.</li>
 <li><strong>The causal mask is what enforces unidirectionality.</strong> A lower-triangular mask with negative infinity in the upper triangle zeros out attention to future tokens after softmax. Simple mechanism, profound consequence.</li>
-<li><strong>The FFN dominates compute.</strong> In GPT-2 Small, the feed-forward network accounts for roughly 80% of the FLOPs per transformer block. The attention mechanism is relatively cheap by comparison.</li>
+<li><strong>The FFN dominates compute.</strong> In GPT-2 Small, the feed-forward network accounts for roughly 65% of the FLOPs per transformer block, with the attention projections and computation making up the rest.</li>
 <li><strong>Residual connections and layer normalization are not optional.</strong> They are what make it possible to train a 12-layer transformer without vanishing gradients and with stable convergence.</li>
 <li><strong>GELU is the activation of choice.</strong> Its smooth gradient profile outperforms ReLU in transformer architectures.</li>
 <li><strong>The two-stage training paradigm (pre-train then fine-tune) is the reason these models are so effective.</strong> Pre-training on massive text gives the model broad language understanding; fine-tuning specializes it.</li>
