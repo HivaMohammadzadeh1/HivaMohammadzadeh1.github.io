@@ -3,7 +3,7 @@
    "Ink & Signal" design system — dark-first, cool, precise
    ============================================================ */
 
-@import url('_fonts.css');
+@import url('fonts.css');
 
 /* === Tokens: dark is the default === */
 :root {
