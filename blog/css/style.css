@@ -35,6 +35,36 @@
   --mono:  'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --hand:  'Caveat', 'Comic Sans MS', cursive;
 
+  /* compatibility aliases: old token names used inside post markup,
+     remapped to the v2 palette (muted, on-paper) so diagrams keep working */
+  --font-mono: var(--mono);
+  --font-sans: var(--serif);
+  --font-display: var(--serif);
+  --signal: var(--accent);
+  --signal-ink: var(--accent);
+  --signal-line: var(--accent-line);
+  --signal-soft: var(--accent-soft);
+  --accent-blue: var(--accent);
+  --accent-indigo: var(--accent);
+  --text: var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-muted: var(--ink-3);
+  --border: var(--edge);
+  --border-light: var(--edge);
+  --line: var(--edge);
+  --line-soft: var(--edge);
+  --bg-card: var(--paper-2);
+  --surface: var(--paper-2);
+  --surface-2: var(--paper-3);
+  --surface-3: var(--paper-3);
+  --accent-violet: #5f5580;
+  --cyan:  #3f6d8c;
+  --teal:  #3f7168;
+  --green: #5a7d55;
+  --gold:  #927734;
+  --amber: #927734;
+  --rose:  #9a5560;
+
   --ease: cubic-bezier(0.2, 0, 0, 1);
   color-scheme: light;
 }
@@ -59,6 +89,15 @@
 
   --code-bg: #1C1D22;
   --code-ink: #9db6dd;
+
+  /* compatibility aliases lifted for dark paper */
+  --accent-violet: #a79ac9;
+  --cyan:  #8fb4cf;
+  --teal:  #8fc0b6;
+  --green: #9cc296;
+  --gold:  #d0b483;
+  --amber: #d0b483;
+  --rose:  #d29aa3;
   color-scheme: dark;
 }
 

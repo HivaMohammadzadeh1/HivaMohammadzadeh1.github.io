@@ -80,6 +80,30 @@
       <h2 id="key-innovations">Key innovations</h2>
       <p>LLaMA does not invent a new architecture. It takes the original transformer and makes targeted modifications that improve training stability, convergence speed, and computational efficiency. Three changes stand out.</p>
 
+      <div class="sketch-wrap">
+        <svg class="sketch" viewBox="0 0 680 300" role="img" aria-label="RoPE encodes position by rotating a token's query and key vector by an angle that grows with position.">
+          <defs><filter id="rough-llama" x="-6%" y="-6%" width="112%" height="115%"><feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.3"/></filter></defs>
+          <text x="22" y="34" class="hi" font-size="30">rotary embeddings (RoPE)</text>
+          <text x="22" y="58" class="lbl" font-size="19">position is baked in by rotating the query &amp; key vector</text>
+          <g filter="url(#rough-llama)" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M150,252 L150,108"/>
+            <path d="M150,252 L402,252"/>
+            <path class="stroke-hi" d="M150,252 L292,192"/>
+            <path class="stroke-hi" d="M150,252 L242,138"/>
+            <path class="stroke-hi" d="M292,192 l-16,-3 l8,14"/>
+            <path class="stroke-hi" d="M242,138 l-13,5 l2,-15"/>
+            <path d="M276,202 Q236,178 224,150"/>
+          </g>
+          <g font-size="20">
+            <text x="308" y="204" class="lbl">position 1</text>
+            <text x="252" y="116" class="hi">position 2</text>
+            <text x="236" y="212" class="lbl" font-size="18">&#952;</text>
+          </g>
+          <text x="452" y="140" class="lbl" font-size="19"><tspan x="452" dy="0">same token,</tspan><tspan x="452" dy="26">a later position &#8594;</tspan><tspan x="452" dy="26">rotated further,</tspan><tspan x="452" dy="26">so the model can</tspan><tspan x="452" dy="26">tell them apart</tspan></text>
+        </svg>
+        <p class="caption"><span class="fig">Figure</span> RoPE encodes position by rotating each token&rsquo;s query and key vectors by an angle proportional to position. Relative position then falls out of the dot product for free.</p>
+      </div>
+
       <div class="arch-cards">
         <div class="arch-card">
           <div class="arch-icon" style="background: var(--rose);">1</div>

@@ -89,6 +89,40 @@
 
       <h2 id="the-masked-attention-mechanism">The masked attention mechanism</h2>
 
+      <div class="sketch-wrap">
+        <svg class="sketch" viewBox="0 0 680 268" role="img" aria-label="Causal masking: the token on attends only to itself and earlier tokens; the future token mat is masked.">
+          <defs><filter id="rough-gpt" x="-5%" y="-5%" width="110%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="2" seed="11" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4"/></filter></defs>
+          <text x="22" y="34" class="hi" font-size="30">causal mask</text>
+          <text x="22" y="58" class="lbl" font-size="19">each token sees only itself and the past, never the future</text>
+          <g filter="url(#rough-gpt)" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="20" y="176" width="108" height="56" rx="7"/>
+            <rect x="150" y="176" width="108" height="56" rx="7"/>
+            <rect x="280" y="176" width="108" height="56" rx="7"/>
+            <rect x="410" y="176" width="108" height="56" rx="7" class="stroke-hi" stroke-width="2.8"/>
+            <rect x="540" y="176" width="108" height="56" rx="7" stroke-dasharray="5 5" opacity="0.55"/>
+            <path class="stroke-hi" d="M456,176 Q265,80 74,176"/>
+            <path class="stroke-hi" d="M458,176 Q331,98 204,176"/>
+            <path class="stroke-hi" d="M460,176 Q397,120 334,176"/>
+            <path class="stroke-hi" d="M456,176 Q462,130 468,176"/>
+            <path class="stroke-hi" d="M68,167 L74,178 L80,167"/>
+            <path class="stroke-hi" d="M198,167 L204,178 L210,167"/>
+            <path class="stroke-hi" d="M328,167 L334,178 L340,167"/>
+            <path d="M472,176 Q533,122 594,176" stroke-dasharray="5 5" opacity="0.5"/>
+            <path d="M521,133 l20,20 M541,133 l-20,20"/>
+          </g>
+          <g font-size="23">
+            <text x="74" y="211" text-anchor="middle" class="lbl">The</text>
+            <text x="204" y="211" text-anchor="middle" class="lbl">cat</text>
+            <text x="334" y="211" text-anchor="middle" class="lbl">sat</text>
+            <text x="464" y="211" text-anchor="middle" class="hi">on</text>
+            <text x="594" y="211" text-anchor="middle" class="lbl">mat</text>
+          </g>
+          <text x="464" y="256" text-anchor="middle" class="hi" font-size="20">query</text>
+          <text x="600" y="150" text-anchor="middle" class="lbl" font-size="18">masked</text>
+        </svg>
+        <p class="caption"><span class="fig">Figure</span> GPT-2 is a decoder: predicting the next token, position &ldquo;on&rdquo; attends to itself and everything before it, while the future token &ldquo;mat&rdquo; is masked out.</p>
+      </div>
+
       <div class="flow-diagram">
         <div style="display: flex; align-items: center; gap: 2rem; justify-content: center; flex-wrap: wrap;">
           <div style="text-align: center;">

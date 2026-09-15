@@ -60,6 +60,38 @@
 
       <h2 id="what-makes-bert-different">What makes BERT different</h2>
       <p>BERT stands for Bidirectional Encoder Representations from Transformers, and the word that matters most in that name is <em>bidirectional</em>. Before BERT, most language models read text left-to-right (or right-to-left). BERT reads the entire sequence at once. When the model processes a token, it has access to every token to its left <em>and</em> every token to its right, so the context is complete.</p>
+
+      <div class="sketch-wrap">
+        <svg class="sketch" viewBox="0 0 680 262" role="img" aria-label="BERT is bidirectional: the token sat attends to tokens on both its left and its right.">
+          <defs><filter id="rough-bert" x="-5%" y="-5%" width="110%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4"/></filter></defs>
+          <text x="22" y="34" class="hi" font-size="30">bidirectional</text>
+          <text x="22" y="58" class="lbl" font-size="19">each token sees every token to its left <tspan class="hi">and</tspan> its right</text>
+          <g filter="url(#rough-bert)" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="20" y="170" width="108" height="56" rx="7"/>
+            <rect x="150" y="170" width="108" height="56" rx="7"/>
+            <rect x="280" y="170" width="108" height="56" rx="7" class="stroke-hi" stroke-width="2.8"/>
+            <rect x="410" y="170" width="108" height="56" rx="7"/>
+            <rect x="540" y="170" width="108" height="56" rx="7"/>
+            <path class="stroke-hi" d="M330,170 Q202,84 74,170"/>
+            <path class="stroke-hi" d="M330,170 Q267,112 204,170"/>
+            <path class="stroke-hi" d="M338,170 Q401,112 464,170"/>
+            <path class="stroke-hi" d="M338,170 Q466,84 594,170"/>
+            <path class="stroke-hi" d="M68,161 L74,172 L80,161"/>
+            <path class="stroke-hi" d="M198,161 L204,172 L210,161"/>
+            <path class="stroke-hi" d="M458,161 L464,172 L470,161"/>
+            <path class="stroke-hi" d="M588,161 L594,172 L600,161"/>
+          </g>
+          <g font-size="23">
+            <text x="74" y="205" text-anchor="middle" class="lbl">The</text>
+            <text x="204" y="205" text-anchor="middle" class="lbl">cat</text>
+            <text x="334" y="205" text-anchor="middle" class="hi">sat</text>
+            <text x="464" y="205" text-anchor="middle" class="lbl">on</text>
+            <text x="594" y="205" text-anchor="middle" class="lbl">mat</text>
+          </g>
+          <text x="334" y="252" text-anchor="middle" class="hi" font-size="20">left + right</text>
+        </svg>
+        <p class="caption"><span class="fig">Figure</span> BERT is an encoder: processing &ldquo;sat&rdquo; draws on tokens from both sides at once. That two-way context is what &ldquo;bidirectional&rdquo; means.</p>
+      </div>
       <p>BERT is an encoder-only model. It does not have the decoder stack you see in GPT-style architectures. There is no autoregressive generation; the entire input is processed in parallel. This design makes BERT effective for understanding tasks: classification, named entity recognition, question answering, and anything else where you need to comprehend the full input before producing an output.</p>
       <p>The base configuration I work with uses 128 tokens as the sequence length, an embedding dimension of 768, 12 attention heads, and a feed-forward filter size of 3072. The model consists of 12 stacked transformer encoder blocks, each containing two sub-layers: a multi-head self-attention mechanism and a position-wise fully connected feed-forward network.</p>
 
