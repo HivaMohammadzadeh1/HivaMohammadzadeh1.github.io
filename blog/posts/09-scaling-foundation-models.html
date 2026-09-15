@@ -38,13 +38,13 @@
 <p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
 <div class="tldr-box">
 
-<strong>TL;DR:</strong> Scale changes everything. GPT-3 showed that a 175-billion-parameter model can perform tasks it was never explicitly trained on -- just from a handful of examples in the prompt. PaLM pushed to 540 billion parameters and broke through on multi-step reasoning. GPT-4 added multimodal input and hit human-level performance on professional benchmarks like the bar exam. These are not just bigger models doing the same thing slightly better. At each scale jump, qualitatively new capabilities emerge. This post covers the scaling trajectory from GPT-3 through PaLM to GPT-4, the opportunities foundation models unlock in healthcare, education, and finance, and the real risks -- bias, power concentration, and accountability gaps -- that come with them.
+<strong>TL;DR:</strong> Scale changes everything. GPT-3 showed that a 175-billion-parameter model can perform tasks it was never explicitly trained on -- just from a handful of examples in the prompt. PaLM pushed to 540 billion parameters and broke through on multi-step reasoning. GPT-4 added multimodal input and hit human-level performance on professional benchmarks like the bar exam. At each scale jump, qualitatively new capabilities emerge. This post covers the scaling trajectory from GPT-3 through PaLM to GPT-4, what foundation models make possible in healthcare, education, and finance, and the real risks -- bias, power concentration, and accountability gaps -- that come with them.
 
 </div>
 
 <hr />
 <h2 id="the-scaling-hypothesis">The Scaling Hypothesis</h2>
-<p>There is a pattern that has held remarkably consistently in deep learning over the past several years: make the model bigger, give it more data, and new capabilities appear. Not just incremental improvements -- genuinely new behaviors that smaller models could not do at all.</p>
+<p>There is a pattern that has held remarkably consistently in deep learning over the past several years: make the model bigger, give it more data, and new capabilities appear. New behaviors, ones smaller models could not do at all, rather than incremental improvements.</p>
 <p>This is the scaling hypothesis, and the models covered in this post are its strongest evidence. GPT-2 had 1.5 billion parameters and could generate coherent paragraphs. GPT-3 scaled to 175 billion and could translate languages, answer trivia, and write code from a few prompt examples. PaLM reached 540 billion and solved multi-step reasoning problems. GPT-4 added vision and matched human professionals on standardized exams.</p>
 <table>
 <thead>
@@ -86,15 +86,15 @@
 
 <div class="key-insight">
 
-Scale is not just "more of the same." At certain thresholds, language models exhibit emergent capabilities -- behaviors that are absent in smaller models and appear suddenly as parameters increase. Few-shot learning, chain-of-thought reasoning, and code generation all emerged this way.
+Scale is more than "more of the same." At certain thresholds, language models exhibit emergent capabilities -- behaviors that are absent in smaller models and appear suddenly as parameters increase. Few-shot learning, chain-of-thought reasoning, and code generation all emerged this way.
 
 </div>
 
 <hr />
 <h2 id="gpt-3-the-few-shot-revolution">GPT-3: The Few-Shot Revolution</h2>
 <p>GPT-3 was the model that made the scaling hypothesis impossible to ignore. At 175 billion parameters -- 10x more than any previous non-sparse language model -- it demonstrated something genuinely surprising: you could get useful task performance without any task-specific training data at all.</p>
-<p>The key insight is few-shot learning. Instead of fine-tuning on thousands of labeled examples, you provide a handful of input-output demonstrations directly in the prompt. The model generalizes from these examples and produces correct outputs on new inputs. GPT-3 did this across language translation, question answering, arithmetic, and even basic programming tasks.</p>
-<p>GPT-3 was pre-trained on a massive corpus -- books, articles, web pages -- to predict the next word in a text sequence. Same objective as GPT-2. The difference is pure scale. And that scale unlocked three distinct modes of operation:</p>
+<p>The mechanism is few-shot learning. Instead of fine-tuning on thousands of labeled examples, you provide a handful of input-output demonstrations directly in the prompt. The model generalizes from these examples and produces correct outputs on new inputs. GPT-3 did this across language translation, question answering, arithmetic, and even basic programming tasks.</p>
+<p>GPT-3 was pre-trained on a massive corpus -- books, articles, web pages -- to predict the next word in a text sequence. Same objective as GPT-2. The difference is pure scale. That scale gave three modes of operation:</p>
 <ul>
 <li><strong>Zero-shot:</strong> Give the model a task description and an input. No examples. GPT-3 generates quality output on tasks it was never explicitly trained on.</li>
 <li><strong>Few-shot:</strong> Provide a few input-output examples in the prompt. No gradient updates. The model picks up the pattern and applies it to new inputs.</li>
@@ -138,7 +138,7 @@ Scale is not just "more of the same." At certain thresholds, language models exh
 <p class="caption" style="text-align:center; margin-top: 0.75rem; font-size: 0.8rem; color: #a1a1aa;">GPT-3's three modes of operation. The breakthrough: zero-shot and few-shot require no gradient updates -- the model generalizes from the prompt alone.</p>
 </div>
 
-<p>The remarkable finding was how far zero-shot and few-shot could go. GPT-3 achieved state-of-the-art on SuperGLUE, surpassing previous models by a significant margin. It demonstrated open-ended generation -- producing coherent, contextually appropriate text unconstrained by specific task formats.</p>
+<p>The finding was how far zero-shot and few-shot could go. GPT-3 achieved state-of-the-art on SuperGLUE, surpassing previous models by a significant margin. It demonstrated open-ended generation -- producing coherent, contextually appropriate text unconstrained by specific task formats.</p>
 <div class="key-insight">
 
 GPT-3's core contribution was not the architecture (it is essentially a scaled-up GPT-2). It was the demonstration that scaling up greatly improves task-agnostic, few-shot performance -- sometimes reaching competitiveness with fine-tuned models that had access to thousands of labeled examples.
@@ -149,14 +149,14 @@ GPT-3's core contribution was not the architecture (it is essentially a scaled-u
 <hr />
 <h2 id="palm-540-billion-parameters-and-the-pathways-system">PaLM: 540 Billion Parameters and the Pathways System</h2>
 <p>If GPT-3 proved scale matters, PaLM proved it matters even more than people expected. PaLM (Pathways Language Model) is a 540-billion-parameter, dense decoder-only Transformer that pushed the frontier on what a single language model can do.</p>
-<p>What makes PaLM architecturally interesting is not just the parameter count. It is how the model was trained and what infrastructure made it possible.</p>
+<p>What makes PaLM interesting is how the model was trained and what infrastructure made it possible.</p>
 <h3 id="the-pathways-system">The Pathways System</h3>
 <p>PaLM was trained with the Pathways system, which enables efficiently training a single model across multiple TPU v4 Pods. This was the first large-scale use of Pathways, scaling to 6,144 TPU chips -- the largest TPU-based system configuration at the time. The system uses a hierarchical architecture with data parallelism at the Pod level across two Cloud TPU v4 Pods, combined with standard data and model parallelism within each Pod.</p>
 <p>This is an infrastructure story as much as a model story. Training a 540-billion-parameter model requires a system that can coordinate thousands of accelerators efficiently, handle communication bottlenecks, and recover from hardware failures. Pathways solved this at unprecedented scale.</p>
 <h3 id="architectural-choices">Architectural Choices</h3>
 <p>PaLM uses parallel layers to speed up training -- computing attention and feed-forward components simultaneously rather than sequentially. It uses multi-query attention to speed up inference. And it introduces the MLM-Mix pre-training objective, jointly pre-training autoencoding and autoregressive language modeling on a large unlabeled corpus, improving out-of-domain performance.</p>
 <h3 id="breakthrough-results">Breakthrough Results</h3>
-<p>PaLM 540B did not just set new state-of-the-art numbers. It broke through on tasks that previous models struggled with fundamentally:</p>
+<p>PaLM 540B broke through on tasks that previous models struggled with fundamentally:</p>
 <ul>
 <li><strong>Multi-step reasoning:</strong> PaLM outperformed fine-tuned state-of-the-art models on reasoning tasks -- surpassing them using few-shot prompting alone.</li>
 <li><strong>BIG-bench:</strong> PaLM outperformed average human performance on BIG-bench, a diverse suite of over 200 tasks designed to probe model capabilities.</li>
@@ -192,22 +192,22 @@ GPT-4 is a significant improvement over GPT-3 in every measurable dimension: it 
 <div class="arch-cards" style="grid-template-columns: 1fr 1fr;">
   <div class="arch-card" style="background: #ecfdf5; border-color: #a7f3d0;">
     <h4 style="color: #047857; margin-bottom: 0.75rem;">Opportunities</h4>
-    <p><strong>Healthcare</strong> &mdash; MedPrompt: 90.2% on medical QA without fine-tuning</p>
-    <p><strong>Education</strong> &mdash; Personalized tutoring and adaptive learning at scale</p>
-    <p><strong>Finance</strong> &mdash; Risk assessment, fraud detection, automated analysis</p>
-    <p><strong>Research</strong> &mdash; Drug discovery and scientific literature synthesis</p>
+    <p><strong>Healthcare</strong>: MedPrompt: 90.2% on medical QA without fine-tuning</p>
+    <p><strong>Education</strong>: personalized tutoring and adaptive learning at scale</p>
+    <p><strong>Finance</strong>: risk assessment, fraud detection, automated analysis</p>
+    <p><strong>Research</strong>: drug discovery and scientific literature synthesis</p>
   </div>
   <div class="arch-card" style="background: #fef2f2; border-color: #fecaca;">
     <h4 style="color: #991b1b; margin-bottom: 0.75rem;">Risks</h4>
-    <p><strong>Bias</strong> &mdash; Amplifies biases present in training data</p>
-    <p><strong>Power concentration</strong> &mdash; Few companies control frontier models</p>
-    <p><strong>Employment</strong> &mdash; Task automation with uneven economic impact</p>
-    <p><strong>Accountability</strong> &mdash; Unclear responsibility for harmful outputs</p>
+    <p><strong>Bias</strong>: amplifies biases present in training data</p>
+    <p><strong>Power concentration</strong>: few companies control frontier models</p>
+    <p><strong>Employment</strong>: task automation with uneven economic impact</p>
+    <p><strong>Accountability</strong>: unclear responsibility for harmful outputs</p>
   </div>
 </div>
 <p class="caption" style="text-align:center; margin-top: 1rem;">Foundation models present enormous opportunities alongside real, concrete risks.</p>
 
-<p>The same capabilities that make foundation models powerful make them dangerous if deployed without care. The risks are concrete and well-documented.</p>
+<p>The same capabilities that make foundation models useful make them dangerous if deployed without care. The risks are concrete and well-documented.</p>
 <h3 id="bias">Bias</h3>
 <p>Foundation models learn from their training data. If that data contains biases -- and it does, reflecting the internet and published text -- the model reproduces and sometimes amplifies them. Models have been shown to generate biased outputs across gender, race, religion, and other categories. In high-stakes domains like healthcare and criminal justice, biased outputs cause real harm.</p>
 <h3 id="concentration-of-power">Concentration of Power</h3>
@@ -266,7 +266,7 @@ The research community has called for increased transparency, accountability, an
 <p><strong>Second, the gap between few-shot and fine-tuned performance is closing.</strong> GPT-3 showed few-shot could compete with fine-tuning on some tasks. PaLM showed it could beat fine-tuned models on reasoning. The distinction between "general-purpose" and "task-specific" models is dissolving.</p>
 <p><strong>Third, infrastructure is becoming the bottleneck.</strong> PaLM required 6,144 TPU chips. Training runs at this scale cost millions of dollars and take weeks. The limiting factor is no longer algorithmic -- it is who can afford the compute. This has implications for who gets to participate in frontier research and who does not.</p>
 <p>The open question is whether this trajectory continues. The optimistic view is that further scaling will produce further breakthroughs. The cautious view is that we are approaching data limitations (the internet is finite), compute limitations (chips are expensive), and fundamental limitations of next-token prediction as an objective. Both views have evidence.</p>
-<p>What is clear is that the models we have today are already powerful enough to transform industries, displace workers, and concentrate power. The time to build robust governance, safety, and accountability frameworks is before the next capability jump, not after.</p>
+<p>What is clear is that the models we have today can already change industries, displace workers, and concentrate power. The time to build governance, safety, and accountability frameworks is before the next capability jump, not after.</p>
 <hr />
 <h2 id="key-takeaways">Key Takeaways</h2>
 <ol>
@@ -283,7 +283,7 @@ The research community has called for increased transparency, accountability, an
 <p><strong>Multimodal is the next frontier.</strong> GPT-4 accepting image inputs is not a novelty feature. It signals that the next generation of foundation models will process text, images, audio, and video together. Applications built on text-only models will need to adapt.</p>
 </li>
 <li>
-<p><strong>Foundation models are double-edged.</strong> Healthcare, education, and finance all stand to benefit enormously. But bias amplification, power concentration, employment disruption, and accountability gaps are real risks that require deliberate intervention -- not just technical fixes, but policy, governance, and institutional design.</p>
+<p><strong>Foundation models are double-edged.</strong> Healthcare, education, and finance all stand to benefit enormously. But bias amplification, power concentration, employment disruption, and accountability gaps are real risks that require deliberate intervention: policy, governance, and institutional design as well as technical fixes.</p>
 </li>
 <li>
 <p><strong>The gap between research and deployment is shrinking.</strong> GPT-3 was a research demonstration. GPT-4 is a product. The time between "interesting paper" and "deployed system affecting millions" is measured in months, not years.</p>
@@ -292,7 +292,7 @@ The research community has called for increased transparency, accountability, an
 <p><strong>Alignment and safety are engineering problems, not afterthoughts.</strong> GPT-4's post-training alignment -- improving factuality, reducing harmful outputs, increasing steerability -- is as important as the pre-training. Building capable models is only half the job.</p>
 </li>
 </ol>
-<p>The models covered in this series -- from <a href="01-activation-functions.html">activation functions</a> through <a href="03-bert-model.html">BERT</a>, <a href="04-gpt2-model.html">GPT-2</a>, <a href="05-t5-model.html">T5</a>, <a href="06-llama-model.html">LLaMA</a>, <a href="07-glue-superglue.html">benchmarks</a>, <a href="08-prompt-tuning.html">prompt tuning</a>, and now scaling -- trace a clear arc. We went from building individual components to assembling architectures to scaling those architectures until new capabilities emerged. The question now is not "can we build more powerful models?" We can. The question is "what do we do with them?"</p>
+<p>The models covered in this series -- from <a href="01-activation-functions.html">activation functions</a> through <a href="03-bert-model.html">BERT</a>, <a href="04-gpt2-model.html">GPT-2</a>, <a href="05-t5-model.html">T5</a>, <a href="06-llama-model.html">LLaMA</a>, <a href="07-glue-superglue.html">benchmarks</a>, <a href="08-prompt-tuning.html">prompt tuning</a>, and now scaling -- trace a clear arc. We went from building individual components to assembling architectures to scaling those architectures until new capabilities emerged. We can build larger models. The open question is what we do with them.</p>
 <hr />
 <p><em>Based on my <a href="https://github.com/HivaMohammadzadeh1/SupervisedIndependentStud">CS199 Supervised Independent Study</a> at UC Berkeley and the original <a href="https://github.com/HivaMohammadzadeh1/Presentations">Presentations</a> I created in 2023.</em></p>
   </article>

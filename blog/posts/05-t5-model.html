@@ -44,7 +44,7 @@
 
 <hr />
 <h2 id="t5s-big-idea-everything-is-text-to-text">T5's Big Idea: Everything is Text-to-Text</h2>
-<p>The core insight behind T5 is simple and powerful: every NLP task can be cast as taking some text as input and producing some text as output. Translation? Input English, output German. Sentiment analysis? Input a sentence, output "positive" or "negative." Grammaticality checking? Input a sentence, output "acceptable" or "not acceptable."</p>
+<p>T5 starts from one idea: every NLP task can be cast as taking some text as input and producing some text as output. Translation? Input English, output German. Sentiment analysis? Input a sentence, output "positive" or "negative." Grammaticality checking? Input a sentence, output "acceptable" or "not acceptable."</p>
 <div class="diagram">
   <img src="../images/details_of_the_t5_model/page-04.png" alt="T5 text-to-text framework showing various task examples -- translation, CoLA, summarization, etc." loading="lazy">
   <p class="caption">T5 text-to-text framework showing various task examples -- translation, CoLA, summarization, etc.</p>
@@ -132,7 +132,7 @@
 
 <p>Here is how it works. The query comes from the decoder: the current decoder hidden state is projected through Wq. But the key and value come from the encoder: the encoder's output hidden states are projected through Wk and Wv. So when the decoder computes attention scores (Q * K^T), it is measuring how relevant each encoded input token is to the current decoder state. The softmax over these scores produces a weighted combination of the encoder's value vectors, which is then used by the decoder to generate the next output token.</p>
 <div class="key-insight">
-  <strong>Key insight:</strong> In cross-attention, Q comes from the decoder, but K and V come from the encoder. This is what lets the decoder "look back" at the full encoded input while generating each output token. It is the bridge between understanding (encoder) and generation (decoder).
+  <strong>Cross-attention:</strong> Q comes from the decoder, but K and V come from the encoder. This is what lets the decoder "look back" at the full encoded input while generating each output token. It is the bridge between understanding (encoder) and generation (decoder).
 </div>
 
 <p>The dimensions are consistent with the rest of the model: Ed = 768, L = 128, h = 12, d = 64. The weight matrices Wq, Wk, Wv are each (768, 768). The attention output passes through Wo (768, 768), gets a residual connection, and then layer normalization, producing the final output of shape (128, 768).</p>
@@ -234,7 +234,7 @@
 <p><strong>Encoder-Decoder (T5)</strong>: Combines both. The encoder reads the full input bidirectionally, the decoder generates output autoregressively with access to the encoder's representations via cross-attention. Best for sequence-to-sequence tasks -- translation, summarization, and any task where input and output have different lengths or meanings.</p>
 </li>
 </ol>
-<p>T5's key insight was that you do not need separate architectures for different tasks. By framing everything as text-to-text with prefix conditioning, a single encoder-decoder model handles classification, regression, translation, and summarization identically.</p>
+<p>T5 showed that you do not need separate architectures for different tasks. By framing everything as text-to-text with prefix conditioning, a single encoder-decoder model handles classification, regression, translation, and summarization identically.</p>
 <h3 id="palm-scaling-the-decoder-path">PaLM: Scaling the Decoder Path</h3>
 <p>While T5 proved the power of encoder-decoder models, Google's PaLM (Pathways Language Model) took a different approach: a 540-billion parameter, dense decoder-only Transformer. PaLM uses parallel layers to speed up training and multi-query attention to speed up inference. It achieved state-of-the-art few-shot performance on hundreds of benchmarks, demonstrating that at sufficient scale, decoder-only models can match or exceed encoder-decoder performance even on understanding tasks.</p>
 <p>This does not diminish T5's contribution -- it shows that the encoder-decoder architecture provides strong performance at smaller scales, which matters for practical deployment.</p>
@@ -245,7 +245,7 @@
 <ul>
 <li><strong>From BERT, it gets bidirectional encoding.</strong> The encoder reads the full input with no masking, building rich contextual representations where every token can attend to every other token.</li>
 <li><strong>From GPT-2, it gets autoregressive decoding.</strong> The decoder generates output left to right, using masked self-attention to ensure causal generation.</li>
-<li><strong>Cross-attention is the glue.</strong> It is the mechanism that neither BERT nor GPT-2 has on its own. Cross-attention lets the decoder condition its generation on the full encoded input, which is essential for tasks where the output depends heavily on understanding the input.</li>
+<li><strong>Cross-attention is the glue.</strong> It is the mechanism that neither BERT nor GPT-2 has on its own. Cross-attention lets the decoder condition its generation on the full encoded input, which matters for tasks where the output depends on the whole input.</li>
 </ul>
 <p>The text-to-text framing is what makes T5 practical. By converting every task to the same input/output format and using prefix conditioning, a single model and a single training pipeline can handle translation, classification, summarization, and question answering. No task-specific heads, no architectural modifications -- just different prefixes.</p>
 <p>When I work with T5, I find that understanding the three types of attention is the key to understanding the whole model. Encoder self-attention gives you context. Decoder masked self-attention gives you generation. Cross-attention gives you the connection between the two. Everything else -- the FFNs, the residual connections, the layer norms -- is shared infrastructure. Get the attention right, and you get T5.</p>

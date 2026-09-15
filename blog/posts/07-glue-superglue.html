@@ -58,7 +58,7 @@
 <p>The tasks span question answering, sentiment analysis, and textual entailment. All tasks are single-sentence or sentence-pair classification, with one exception: STS-B, which is a regression task.</p>
 <hr />
 <h2 id="how-the-glue-score-works">How the GLUE Score Works</h2>
-<p>The beauty of GLUE is that it lets researchers compare, in a single number, models against one another. Here is how it works:</p>
+<p>GLUE lets researchers compare models in a single number. Here is how it works:</p>
 <ol>
 <li><strong>Swap the head.</strong> Remove the pretraining classification layer from your model and replace it with one that accommodates the output of the GLUE task.</li>
 <li><strong>Fine-tune.</strong> Train the model on each of the nine tasks.</li>
@@ -84,7 +84,7 @@
 <p><strong>Sentence:</strong> "Our friends won't buy this analysis, let alone the next one we propose."
 <strong>Label:</strong> 1 (acceptable)</p>
 </blockquote>
-<p>The interesting thing about CoLA is that the sentences come from linguistics papers, so they include deliberately constructed examples that probe subtle grammatical boundaries. This is not just "does the sentence sound right" -- it is testing whether the model has internalized the formal rules of English syntax.</p>
+<p>The interesting thing about CoLA is that the sentences come from linguistics papers, so they include deliberately constructed examples that probe subtle grammatical boundaries. It tests whether the model has internalized the formal rules of English syntax.</p>
 <h4 id="sst-2-stanford-sentiment-treebank">SST-2 (Stanford Sentiment Treebank)</h4>
 <p><strong>What it tests:</strong> Sentiment classification. Is the expressed opinion positive or negative?</p>
 <p>SST-2 has 70,042 sentences from movie reviews, split into 67,349 train / 872 validation / 1,822 test. Binary classification, scored by <strong>accuracy</strong>.</p>
@@ -225,11 +225,11 @@
 <p>SuperGLUE is that harder test. It is a new benchmark upgraded from GLUE with a new set of more difficult language understanding tasks, a software toolkit, and a public leaderboard. The design philosophy is the same -- a standardized suite that produces a single comparable score -- but the tasks are deliberately chosen to be beyond the reach of then-current models.</p>
 <hr />
 <h2 id="what-superglue-improved">What SuperGLUE Improved</h2>
-<p>SuperGLUE was not just "harder GLUE." It made several structural improvements:</p>
+<p>SuperGLUE made several structural changes beyond harder tasks:</p>
 <ul>
 <li><strong>More challenging tasks.</strong> SuperGLUE retains the two hardest tasks from GLUE (RTE and the Winograd-style challenge) and adds new tasks selected from an open call for contributions. The bar for inclusion was high -- tasks had to show substantial headroom between BERT-level baselines and human performance.</li>
 <li><strong>More diverse task formats.</strong> GLUE is entirely sentence classification and regression. SuperGLUE adds coreference resolution and question answering formats, testing a broader range of model capabilities.</li>
-<li><strong>Comprehensive human baselines.</strong> Every SuperGLUE task comes with carefully measured human performance baselines, making it possible to quantify exactly how far models have to go.</li>
+<li><strong>Human baselines.</strong> Every SuperGLUE task comes with carefully measured human performance baselines, making it possible to quantify exactly how far models have to go.</li>
 <li><strong>Improved code support.</strong> SuperGLUE ships with a new modular toolkit built on PyTorch and AllenNLP, making it easier to run evaluations consistently.</li>
 <li><strong>Refined usage rules.</strong> The rules were updated to ensure fair competition and give full credit to the original data and task creators.</li>
 </ul>
@@ -241,7 +241,7 @@
 <p><strong>COPA (Choice of Plausible Alternatives)</strong> -- Causal reasoning. Given a premise, choose which of two alternatives is the more plausible cause or effect. Contains 1,000 examples (400 train / 100 validation / 500 test) from blogs and a photography encyclopedia. Scored by accuracy.</p>
 <p><strong>MultiRC</strong> -- Multi-sentence reading comprehension. Given a passage and a question, select all correct answers from a set of candidates. This tests whether models can synthesize information across multiple sentences.</p>
 <p><strong>ReCoRD</strong> -- Reading comprehension with commonsense reasoning. The model must fill in a missing entity in a passage summary, requiring both passage understanding and world knowledge.</p>
-<p><strong>RTE</strong> -- Retained from GLUE. Same textual entailment task, same format. Its inclusion in both benchmarks underscores how difficult it remains.</p>
+<p><strong>RTE</strong> -- Retained from GLUE. Same textual entailment task, same format. It is in both benchmarks because it is still hard.</p>
 <p><strong>WiC (Word-in-Context)</strong> -- Word sense disambiguation. Given a word used in two different sentences, determine whether it has the same meaning in both. This isolates a fundamental challenge in NLP: the same word can mean completely different things depending on context.</p>
 <p><strong>WSC (Winograd Schema Challenge)</strong> -- Pronoun coreference resolution. An upgraded version of GLUE's WNLI, reframed as a coreference task. The model must determine which noun a pronoun refers to, requiring commonsense reasoning about the described situation.</p>
 <hr />
@@ -249,11 +249,11 @@
 <p>Here is what I want you to walk away with:</p>
 <ul>
 <li><strong>Benchmarks exist to make progress measurable.</strong> Before GLUE, comparing language models was subjective and inconsistent. GLUE gave the field a common yardstick, and SuperGLUE raised the bar when that yardstick was no longer discriminative.</li>
-<li><strong>The GLUE score is a single number, but it summarizes nine very different capabilities.</strong> Grammar checking, sentiment analysis, paraphrase detection, textual entailment, pronoun resolution -- each task tests something distinct. A high GLUE score means the model is good at language understanding broadly, not just at one narrow skill.</li>
+<li><strong>The GLUE score is a single number, but it summarizes nine very different capabilities.</strong> Grammar checking, sentiment analysis, paraphrase detection, textual entailment, pronoun resolution -- each task tests something distinct. A high GLUE score means the model handles language understanding broadly rather than one narrow skill.</li>
 <li><strong>Task diversity matters.</strong> GLUE deliberately spans different dataset sizes (from 634 to 392,702 training examples), different text genres (news, fiction, movie reviews, Quora questions), and different difficulty levels. A model that only works on large datasets or easy tasks will not score well.</li>
 <li><strong>When models saturate a benchmark, you need a harder one.</strong> This is the entire reason SuperGLUE exists. Progress on GLUE plateaued not because language understanding was solved, but because the tasks were no longer hard enough to differentiate top models.</li>
 <li><strong>Small datasets are the real test.</strong> RTE, WNLI, MRPC, and CoLA are all relatively small. They test whether a pretrained model can transfer its knowledge to settings with limited fine-tuning data -- which is often the realistic scenario in practice.</li>
-<li><strong>SuperGLUE is not just harder tasks -- it is better methodology.</strong> Comprehensive human baselines, diverse task formats, and refined evaluation rules make it a more rigorous benchmark, not just a more difficult one.</li>
+<li><strong>SuperGLUE is better methodology as well as harder tasks.</strong> Measured human baselines, diverse task formats, and refined evaluation rules make it a more rigorous benchmark as well as a more difficult one.</li>
 </ul>
 <p>The trajectory from GLUE to SuperGLUE is a template for how the field evolves. Build a benchmark, push models until they saturate it, identify the gaps, build a harder benchmark. The tasks change but the principle stays the same: if you cannot measure it, you cannot improve it.</p>
   </article>

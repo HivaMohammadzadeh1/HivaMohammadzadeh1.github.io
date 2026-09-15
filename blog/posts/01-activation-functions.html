@@ -114,7 +114,7 @@
 </div>
 
 <p>The range is (-infinity, +infinity). Both the function and its derivative are monotonic. The small negative slope (usually 0.01) means that neurons never fully die -- they always have a non-zero gradient, so they always have a chance to recover and keep learning.</p>
-<p>In practice, Leaky ReLU is a drop-in replacement for ReLU. The performance improvement is not always dramatic, but it removes the dying neuron failure mode, and that makes training more robust.</p>
+<p>In practice, Leaky ReLU is a drop-in replacement for ReLU. The performance improvement is not always dramatic, but it removes the dying neuron failure mode, and that makes training less likely to stall.</p>
 <hr />
 <h2 id="modern-activations-gelu-and-swish">Modern Activations: GeLU and Swish</h2>
 <h3 id="gelu-gaussian-error-linear-unit">GeLU (Gaussian Error Linear Unit)</h3>
@@ -234,7 +234,7 @@
 <li><strong>For output layers with probability targets:</strong> Sigmoid (binary) or Softmax (multi-class) are still the right tools.</li>
 <li><strong>Avoid sigmoid and tanh in hidden layers of deep networks.</strong> The vanishing gradient problem is real and it will slow you down.</li>
 </ul>
-<p>The trend in the field is clear: we are moving toward smoother, non-monotonic activations. GeLU and Swish are not just marginal improvements -- they represent a meaningful shift in how we think about the nonlinearities in our networks. The smoothness of their derivatives translates directly into more stable and efficient training.</p>
+<p>The trend in the field is clear: we are moving toward smoother, non-monotonic activations. GeLU and Swish change how we think about the nonlinearities in our networks. The smoothness of their derivatives translates directly into more stable and efficient training.</p>
 <p>Pick the right activation function for your architecture, pay attention to your gradients, and do not be afraid to experiment.</p>
   </article>
 </main>

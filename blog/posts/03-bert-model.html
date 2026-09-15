@@ -281,7 +281,7 @@
 <h3 id="beyond-bert-roberta">Beyond BERT: RoBERTa</h3>
 <p>It is worth mentioning RoBERTa, which proposed several key improvements to BERT's pre-training:</p>
 <ul>
-<li><strong>Dynamic masking</strong>: Instead of using the same static mask, RoBERTa randomly masks different tokens at each training step, forcing the model to be more robust</li>
+<li><strong>Dynamic masking</strong>: Instead of using the same static mask, RoBERTa randomly masks different tokens at each training step, so the model cannot rely on one masking pattern</li>
 <li><strong>Larger-scale pre-training</strong>: Trained on 160GB of text (10x BERT's 16GB)</li>
 <li><strong>Longer training</strong>: Maximum sequence length of 512 tokens, trained for 100 epochs</li>
 <li><strong>Removed NSP</strong>: Dropped the Next Sentence Prediction objective entirely</li>

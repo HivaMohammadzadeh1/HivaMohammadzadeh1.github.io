@@ -113,7 +113,7 @@
 
 <h3 id="rotary-positional-embeddings-rope">Rotary Positional Embeddings (RoPE)</h3>
 <p>LLaMA removes absolute positional embeddings entirely and replaces them with <strong>Rotary Positional Embeddings (RoPE)</strong> applied at every layer of the network.</p>
-<p>RoPE encodes absolute positional information using a rotation matrix while naturally incorporating explicit relative position dependency in the self-attention formulation. The idea is elegant: instead of adding a position vector to the embeddings once at the input, you rotate the query and key vectors by an angle proportional to their position in the sequence:</p>
+<p>RoPE encodes absolute positional information using a rotation matrix while naturally incorporating explicit relative position dependency in the self-attention formulation. Instead of adding a position vector to the embeddings once at the input, you rotate the query and key vectors by an angle proportional to their position in the sequence:</p>
 <div class="math-block">
   <code>f<sub>q,k</sub>(x<sub>m</sub>, m) = R(m&theta;) &middot; W &middot; x<sub>m</sub></code><br>
   where <code>R(m&theta;)</code> is the 2D rotation matrix <code>[cos m&theta;, -sin m&theta;; sin m&theta;, cos m&theta;]</code>
@@ -246,11 +246,11 @@
 <p>Here is what I take away from the LLaMA architecture as a practitioner:</p>
 <ul>
 <li><strong>Data quality over model size.</strong> LLaMA demonstrated that state-of-the-art performance is achievable with publicly available data and smaller models. The 13B model competes with GPT-3 (175B) on most benchmarks. That is a 13x reduction in parameters.</li>
-<li><strong>Pre-normalization with RMSNorm</strong> is now the standard for training stability in large language models. It is simpler, faster, and more robust than post-norm Layer Norm. If you are building any new transformer, use pre-norm RMSNorm.</li>
+<li><strong>Pre-normalization with RMSNorm</strong> is now the standard for training stability in large language models. It is simpler and faster than post-norm Layer Norm, and it trains more stably. If you are building any new transformer, use pre-norm RMSNorm.</li>
 <li><strong>SwiGLU costs you a third weight matrix</strong> but buys you smoother gradients and better convergence. The 2/3 scaling of the hidden dimension (giving 11008 instead of 16384) keeps the parameter count in check while accommodating the gating mechanism.</li>
 <li><strong>RoPE is a strict upgrade over absolute positional embeddings.</strong> It naturally captures relative position and generalizes better to sequence lengths not seen during training.</li>
-<li><strong>Efficiency is a design priority, not an afterthought.</strong> Activation checkpointing, optimized attention, and model/sequence parallelism are baked into the architecture from the start. LLaMA is designed to be cheap to serve, not just cheap to train.</li>
-<li><strong>Open data matters.</strong> By training exclusively on public datasets, LLaMA enabled the entire open-source LLM ecosystem that followed -- Alpaca, Vicuna, and hundreds of derivatives. The architectural choices are important, but the open-data commitment is what made LLaMA transformative.</li>
+<li><strong>Efficiency is a design priority, not an afterthought.</strong> Activation checkpointing, optimized attention, and model/sequence parallelism are baked into the architecture from the start. LLaMA is designed to be cheap to serve as well as cheap to train.</li>
+<li><strong>Open data matters.</strong> By training exclusively on public datasets, LLaMA enabled the entire open-source LLM ecosystem that followed -- Alpaca, Vicuna, and hundreds of derivatives. The architectural choices are important, but the open-data commitment is what gave LLaMA its reach.</li>
 </ul>
 <hr />
 <p><em>This post is based on my presentation "Details of the LLaMA Model (Large Language Model Meta AI)" at Berkeley EECS. The original slides, including all architecture diagrams and computation flows, are available in <a href="https://github.com/HivaMohammadzadeh1/Presentations/blob/main/Details_of_the_LLaMA_Model.pdf">Details_of_the_LLaMA_Model.pdf</a>.</em></p>

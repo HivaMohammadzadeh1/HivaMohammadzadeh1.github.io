@@ -38,7 +38,7 @@
 <p><strong>By <a href="https://hivam.org/">Hiva Mohammadzadeh</a></strong> | Stanford MSCS · UC Berkeley EECS</p>
 <div class="tldr-box">
 
-<strong>TL;DR:</strong> Fine-tuning every parameter of a large language model for each new task is expensive and inefficient. Prompt tuning offers a better path: freeze the model, learn a small set of continuous "soft prompt" vectors, and get competitive performance at a fraction of the cost. This post walks through the evolution from full fine-tuning to hard prompts to soft prompts, covers prefix tuning and prompt tuning (they are different), explains how prompt ensembling reduces hallucination, and shows how chain-of-thought prompting unlocks reasoning. The MedPrompt case study ties it all together -- GPT-4 with smart prompting strategies hits 90.2% on medical exam questions, outperforming fine-tuned specialist models.
+<strong>TL;DR:</strong> Fine-tuning every parameter of a large language model for each new task is expensive and inefficient. Prompt tuning offers a better path: freeze the model, learn a small set of continuous "soft prompt" vectors, and get competitive performance at a fraction of the cost. This post walks through the evolution from full fine-tuning to hard prompts to soft prompts, covers prefix tuning and prompt tuning (they are different), explains how prompt ensembling reduces hallucination, and shows how chain-of-thought prompting improves reasoning. The MedPrompt case study ties it all together -- GPT-4 with smart prompting strategies hits 90.2% on medical exam questions, outperforming fine-tuned specialist models.
 
 </div>
 
@@ -65,7 +65,7 @@
 <p>This is a ceiling. No matter how clever your prompt engineering, you are limited by what you can express in natural language tokens.</p>
 <hr />
 <h2 id="soft-prompts-learning-the-prompt">Soft Prompts: Learning the Prompt</h2>
-<p>Soft prompts break through that ceiling. Instead of discrete tokens that a human writes, soft prompts are continuous vectors in the model's embedding space -- learned representations that are optimized directly through backpropagation. They are not words. They are embeddings that represent patterns the model can leverage for a specific task.</p>
+<p>Soft prompts break through that ceiling. Instead of discrete tokens that a human writes, soft prompts are continuous vectors in the model's embedding space -- learned representations that are optimized directly through backpropagation. They are not words. They are embeddings that encode patterns the model can use for a specific task.</p>
 <div class="diagram">
   <img src="../images/prompt_tuning/page-05.png" alt="Diagram: Pre-trained Model (Frozen) with Tunable Soft Prompt prepended to the Input Text" loading="lazy">
   <p class="caption">Diagram: Pre-trained Model (Frozen) with Tunable Soft Prompt prepended to the Input Text</p>
@@ -105,7 +105,7 @@
   <p class="caption">Chart: SuperGLUE Score vs. Model Parameters (log scale) for Model Tuning, Multi-task Model Tuning, Prompt Design, and Prompt Tuning -- prompt tuning converges with model tuning near 10^11 parameters</p>
 </div>
 
-<p>This is a powerful result. It means that for the largest models -- the ones where fine-tuning is most expensive -- prompt tuning is both the cheapest and the most effective alternative.</p>
+<p>This means that for the largest models -- the ones where fine-tuning is most expensive -- prompt tuning is both the cheapest and the most effective alternative.</p>
 <p><strong>Summary of pros and cons for prompt tuning:</strong></p>
 <ul>
 <li>You can tune a massive model with a tiny number of parameters</li>
@@ -151,15 +151,15 @@
   <p class="caption">Charts: CoT performance gains in Commonsense Reasoning, Symbolic Reasoning, and Arithmetic tasks -- significant improvements at larger model scales</p>
 </div>
 
-<p>The performance data shows two important patterns. First, CoT prompting consistently improves performance on reasoning tasks -- commonsense, symbolic, and arithmetic. Second, the gains are scale-dependent: CoT provides minimal benefit for smaller models but becomes dramatically effective as model size increases. This makes sense -- smaller models may not have enough capacity to follow complex reasoning chains, while larger models can leverage the intermediate steps effectively.</p>
+<p>The performance data shows two important patterns. First, CoT prompting consistently improves performance on reasoning tasks -- commonsense, symbolic, and arithmetic. Second, the gains are scale-dependent: CoT provides minimal benefit for smaller models but becomes dramatically effective as model size increases. This makes sense -- smaller models may not have enough capacity to follow complex reasoning chains, while larger models can use the intermediate steps.</p>
 <p>The pros are clear: better reasoning performance and better interpretability (you can inspect the reasoning chain to understand how the model arrived at its answer). CoT prompting has become a standard technique in the practitioner's toolkit, and for good reason.</p>
 <hr />
 <h2 id="case-study-medprompt">Case Study: MedPrompt</h2>
-<p>This is where all of the techniques come together in a practical, high-stakes application. MedPrompt (Nori et al., 2023) is a prompting strategy designed to boost GPT-4's performance on medical exam questions -- specifically the MedQA benchmark. The results are remarkable.</p>
+<p>This is where all of the techniques come together in a practical, high-stakes application. MedPrompt (Nori et al., 2023) is a prompting strategy designed to boost GPT-4's performance on medical exam questions -- specifically the MedQA benchmark. </p>
 <p>The goal was straightforward: can smart prompting close the gap with fine-tuned specialist models? The answer is yes, and then some.</p>
 <p>MedPrompt combines three techniques:</p>
 <h3 id="dynamic-few-shot-selection">Dynamic Few-Shot Selection</h3>
-<p>Instead of using random or hand-picked few-shot examples, MedPrompt uses K-nearest-neighbor clustering in the model's embedding space to find the five most relevant examples for each test question. This means every question gets its own tailored set of few-shot demonstrations. It leverages training data similarly to fine-tuning, but without modifying any model parameters.</p>
+<p>Instead of using random or hand-picked few-shot examples, MedPrompt uses K-nearest-neighbor clustering in the model's embedding space to find the five most relevant examples for each test question. This means every question gets its own tailored set of few-shot demonstrations. It uses training data the way fine-tuning does, but without modifying any model parameters.</p>
 <h3 id="self-generated-chain-of-thought">Self-Generated Chain of Thought</h3>
 <p>Rather than manually writing chain-of-thought examples, MedPrompt asks GPT-4 itself to generate the reasoning chains. This automates what would otherwise be the most labor-intensive part of CoT prompting, and the model's own reasoning chains turn out to be highly effective as demonstrations.</p>
 <h3 id="choice-shuffling-ensemble">Choice Shuffling Ensemble</h3>
@@ -206,7 +206,7 @@
 </div>
 
 <p>Starting from a zero-shot baseline of 81.7%, each technique adds incremental improvement. Dynamic few-shot selection adds 2.2 points. Chain of thought adds another 3.4-4.5 points. And the choice shuffling ensemble pushes the final score to 90.2% -- outperforming fine-tuned specialist models like Med-PaLM 2 that required extensive domain-specific training.</p>
-<p>This is the key insight: a general-purpose model (GPT-4) with no medical fine-tuning, equipped with the right prompting strategies, outperforms models that were specifically trained on medical data. The prompting techniques covered in this post -- few-shot selection, chain of thought, and ensembling -- are not just academic ideas. Combined thoughtfully, they deliver state-of-the-art results in a domain where accuracy literally matters for patient outcomes.</p>
+<p>The result: a general-purpose model (GPT-4) with no medical fine-tuning, equipped with the right prompting strategies, outperforms models that were specifically trained on medical data. The prompting techniques covered in this post -- few-shot selection, chain of thought, and ensembling -- work outside papers. Combined, they beat fine-tuned specialist models in a domain where accuracy affects patient outcomes.</p>
 <hr />
 <h2 id="the-bigger-picture">The Bigger Picture</h2>
 <p>The techniques covered here are just the beginning. The field is expanding rapidly in several directions:</p>
@@ -240,7 +240,7 @@
 <p><strong>Ensembling reduces instability.</strong> Running diverse prompts and aggregating their predictions tackles hallucination and output variance -- critical for production systems.</p>
 </li>
 <li>
-<p><strong>Chain of thought unlocks reasoning.</strong> Asking the model to show its work improves performance on arithmetic, symbolic, and commonsense tasks, especially at scale.</p>
+<p><strong>Chain of thought improves reasoning.</strong> Asking the model to show its work improves performance on arithmetic, symbolic, and commonsense tasks, especially at scale.</p>
 </li>
 <li>
 <p><strong>Combining techniques is where the real gains are.</strong> MedPrompt shows that stacking dynamic few-shot selection, self-generated CoT, and choice shuffling ensembles can push a general-purpose model past fine-tuned specialists.</p>

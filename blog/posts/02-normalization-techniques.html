@@ -116,7 +116,7 @@
 <code>&sigma;<sub>i</sub> = &radic;( (1/m) &sum; (x<sub>k</sub> - &mu;<sub>i</sub>)<sup>2</sup> + &epsilon; )</code>
 </div>
 
-<p>The key insight: because statistics are computed per-example, <strong>there is zero dependence on batch size</strong>. Whether you are running batch size 2 or 64, Group Norm gives you the same behavior.</p>
+<p>Because statistics are computed per-example, <strong>there is zero dependence on batch size</strong>. Whether you are running batch size 2 or 64, Group Norm gives you the same behavior.</p>
 <p>Two special cases worth memorizing:</p>
 <ul>
 <li>Set <strong>G = 1</strong> (one group containing all channels) and you get Layer Norm.</li>
