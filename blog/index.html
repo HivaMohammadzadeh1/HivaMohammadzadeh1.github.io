@@ -23,6 +23,8 @@
 </head>
 <body>
 
+<div class="masthead-band"></div>
+
 <header class="site-header" id="header">
   <div class="container-wide">
     <a href="index.html" class="site-title">Inside Out <span class="logo-mark">DL</span></a>
@@ -38,136 +40,132 @@
   </div>
 </header>
 
-<main>
-  <!-- Front matter -->
-  <div class="frontmatter">
-    <p class="series">A ten-part series, written from first principles</p>
-    <h1>Deep Learning from the Inside Out</h1>
-    <p class="abstract">
-      I take modern language models apart — the transformer, BERT, GPT-2, T5, and LLaMA — down to
-      their weight matrices, tensor shapes, and FLOP counts. Every claim here is one you can check
-      with arithmetic.
-    </p>
-    <p class="provenance">
-      Written from the <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a>
-      and the <a href="https://github.com/HivaMohammadzadeh1/SupervisedIndependentStud">CS199 independent
-      study</a> I did at UC Berkeley EECS in 2023, surveying eleven papers from
-      <em>Attention Is All You Need</em> through GPT-4.
-    </p>
-    <p class="byline">
-      <b>Hiva Mohammadzadeh</b> &nbsp;·&nbsp; Stanford MSCS, UC Berkeley EECS &nbsp;·&nbsp; ten deep dives, four architectures
-    </p>
-  </div>
+<!-- reusable hand-drawn ring for contents numbers -->
+<svg class="ringdefs" aria-hidden="true"><defs>
+  <symbol id="ring" viewBox="0 0 100 100">
+    <path d="M50 7 C75 5 95 27 93 52 C91 78 69 95 46 93 C20 91 6 67 9 42 C12 19 30 9 54 8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  </symbol>
+</defs></svg>
 
-  <!-- Table of contents -->
-  <section class="contents">
+<main>
+  <!-- Hero -->
+  <section class="hero2">
+    <div class="lead">
+      <p class="series">A ten-part series, written from first principles</p>
+      <h1>Deep Learning<br>from the <span class="u">Inside Out<svg viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8 C42 2 72 12 104 7 C134 2 164 12 198 5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg></span></h1>
+      <p class="abstract">I take modern language models apart — the transformer, BERT, GPT-2, T5, and LLaMA — down to their weight matrices, tensor shapes, and FLOP counts. Every claim here is one you can check with arithmetic.</p>
+      <p class="provenance">Written from the <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a> and the <a href="https://github.com/HivaMohammadzadeh1/SupervisedIndependentStud">CS199 independent study</a> I did at UC Berkeley EECS in 2023, surveying eleven papers from <em>Attention Is All You Need</em> through GPT-4.</p>
+      <p class="meta"><b>Hiva Mohammadzadeh</b> &nbsp;·&nbsp; Stanford MSCS, UC Berkeley EECS</p>
+    </div>
+
+    <figure class="hero-illo">
+      <svg viewBox="0 0 460 452" width="460" height="452" role="img" aria-label="A hand-drawn transformer block: tokens flow in, through self-attention and a feed-forward network with residual add-and-norm steps, and richer tokens flow out. Stacked N times.">
+        <defs><filter id="rough-hero" x="-6%" y="-4%" width="112%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.011" numOctaves="2" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.2"/></filter></defs>
+        <text x="90" y="24" class="hi" font-size="21" style="font-family:var(--hand); fill:var(--accent);">one transformer block</text>
+        <g filter="url(#rough-hero)" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <!-- input tokens -->
+          <circle cx="160" cy="46" r="8"/><circle cx="214" cy="46" r="8"/><circle cx="268" cy="46" r="8"/><circle cx="322" cy="46" r="8"/>
+          <path d="M168,40 Q214,18 260,40" stroke-width="1.5"/>
+          <path d="M222,40 Q268,20 314,40" stroke-width="1.5"/>
+          <!-- into the block -->
+          <path d="M241,58 L241,86"/><path d="M235,80 L241,90 L247,80"/>
+          <!-- block -->
+          <rect x="92" y="92" width="300" height="312" rx="16"/>
+          <!-- self-attention -->
+          <rect x="122" y="120" width="240" height="58" rx="8" class="stroke-hi" stroke-width="2.4"/>
+          <path d="M241,178 L241,190"/>
+          <!-- add & norm 1 -->
+          <circle cx="241" cy="204" r="13"/>
+          <path d="M231,204 L251,204 M241,194 L241,214"/>
+          <path d="M241,217 L241,232"/><path d="M235,226 L241,236 L247,226"/>
+          <!-- feed-forward -->
+          <rect x="122" y="236" width="240" height="58" rx="8" class="stroke-hi" stroke-width="2.4"/>
+          <path d="M241,294 L241,306"/>
+          <!-- add & norm 2 -->
+          <circle cx="241" cy="320" r="13"/>
+          <path d="M231,320 L251,320 M241,310 L241,330"/>
+          <!-- residual skips on the left -->
+          <path d="M108,132 C86,158 86,184 224,204" stroke-width="1.6" stroke-dasharray="1 6"/>
+          <path d="M108,248 C86,282 86,304 224,320" stroke-width="1.6" stroke-dasharray="1 6"/>
+          <!-- out of the block -->
+          <path d="M241,333 L241,404"/>
+          <path d="M235,398 L241,408 L247,398"/>
+          <!-- output tokens -->
+          <circle cx="160" cy="424" r="8"/><circle cx="214" cy="424" r="8"/><circle cx="268" cy="424" r="8"/><circle cx="322" cy="424" r="8"/>
+          <!-- brace + xN -->
+          <path d="M406,96 C418,96 414,238 424,248 C414,258 418,400 406,400" stroke-width="1.8"/>
+        </g>
+        <g style="font-family:var(--hand);">
+          <text x="241" y="156" text-anchor="middle" font-size="20" class="hi" style="fill:var(--accent);">self-attention</text>
+          <text x="241" y="272" text-anchor="middle" font-size="20" class="hi" style="fill:var(--accent);">feed-forward</text>
+          <text x="266" y="209" font-size="15" style="fill:var(--ink-3);">add &amp; norm</text>
+          <text x="266" y="325" font-size="15" style="fill:var(--ink-3);">add &amp; norm</text>
+          <text x="30" y="50" font-size="16" style="fill:var(--ink-3);">tokens</text>
+          <text x="24" y="428" font-size="16" style="fill:var(--ink-3);">richer</text>
+          <text x="437" y="252" text-anchor="middle" font-size="26" class="hi" style="fill:var(--accent);">×N</text>
+        </g>
+      </svg>
+      <figcaption class="cap">stack N of these &mdash; that&rsquo;s the whole model</figcaption>
+    </figure>
+  </section>
+
+  <div class="rule-wavy"><svg viewBox="0 0 1200 16" preserveAspectRatio="none" aria-hidden="true"><path d="M0 9 C100 3 200 15 300 9 C400 3 500 15 600 9 C700 3 800 15 900 9 C1000 3 1100 15 1200 9" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+
+  <!-- Contents -->
+  <section class="contents2">
     <p class="label">Contents</p>
 
-    <div class="toc-group" id="foundations">
+    <div class="group-head2" id="foundations">
       <h2>Foundations</h2>
-
-      <div class="toc-item">
-        <span class="n">00</span>
-        <div>
-          <a class="t" href="posts/00-transformer-attention.html">The Transformer: where attention replaced recurrence</a>
-          <p class="d">Self-attention and multi-head attention built from first principles, and the three model families every modern LLM descends from. <span class="concepts">Attention Is All You Need, encoder vs decoder.</span></p>
-        </div>
-      </div>
-
-      <div class="toc-item">
-        <span class="n">01</span>
-        <div>
-          <a class="t" href="posts/01-activation-functions.html">A survey of activation functions</a>
-          <p class="d">The nonlinearities that let a network learn curves, from sigmoid and tanh through ReLU, GeLU, and Swish, with the plots and the trade-offs. <span class="concepts">Derivatives and why smoothness matters.</span></p>
-        </div>
-      </div>
-
-      <div class="toc-item">
-        <span class="n">02</span>
-        <div>
-          <a class="t" href="posts/02-normalization-techniques.html">Normalization, from BatchNorm to RMSNorm</a>
-          <p class="d">Why activations drift during training, and how each normalizer fixes it. <span class="concepts">BatchNorm, LayerNorm, GroupNorm, RMSNorm.</span></p>
-        </div>
-      </div>
-
-      <div class="toc-item">
-        <span class="n">07</span>
-        <div>
-          <a class="t" href="posts/07-glue-superglue.html">GLUE and SuperGLUE: measuring language understanding</a>
-          <p class="d">The benchmarks that defined the field, task by task, with real examples, dataset sizes, and the metric each one is scored on. <span class="concepts">Nine GLUE tasks, eight SuperGLUE tasks.</span></p>
-        </div>
-      </div>
+      <span class="u"><svg viewBox="0 0 600 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 7 C80 2 140 11 220 6 C300 2 380 11 460 6 C520 3 560 10 598 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+      <span class="count">four</span>
+    </div>
+    <div class="grid2">
+      <div class="toc2"><span class="num"><svg class="ring"><use href="#ring"/></svg><span class="n">00</span></span><div><a class="t" href="posts/00-transformer-attention.html">The Transformer: where attention replaced recurrence</a><p class="d">Self-attention and multi-head attention from first principles, and the three model families every LLM descends from. <span class="concepts">Attention Is All You Need.</span></p></div></div>
+      <div class="toc2"><span class="num"><svg class="ring"><use href="#ring"/></svg><span class="n">01</span></span><div><a class="t" href="posts/01-activation-functions.html">A survey of activation functions</a><p class="d">The nonlinearities that let a network learn curves, from sigmoid and tanh to ReLU, GeLU, and Swish. <span class="concepts">Derivatives and smoothness.</span></p></div></div>
+      <div class="toc2"><span class="num"><svg class="ring"><use href="#ring"/></svg><span class="n">02</span></span><div><a class="t" href="posts/02-normalization-techniques.html">Normalization, from BatchNorm to RMSNorm</a><p class="d">Why activations drift during training, and how each normalizer fixes it. <span class="concepts">Batch, Layer, Group, RMS.</span></p></div></div>
+      <div class="toc2"><span class="num"><svg class="ring"><use href="#ring"/></svg><span class="n">07</span></span><div><a class="t" href="posts/07-glue-superglue.html">GLUE and SuperGLUE: measuring understanding</a><p class="d">The benchmarks that defined the field, task by task, with real examples and metrics. <span class="concepts">17 tasks.</span></p></div></div>
     </div>
 
-    <div class="toc-group" id="architectures">
+    <div class="group-head2" id="architectures">
       <h2>Model architectures</h2>
-
-      <div class="toc-item">
-        <span class="n">03</span>
-        <div>
-          <a class="t" href="posts/03-bert-model.html">BERT: an encoder that reads both directions</a>
-          <p class="d">The full data path from input embeddings through self-attention and feed-forward layers, with exact tensor shapes and a FLOP count for every block. <span class="concepts">12 blocks, 768-dim, 1.86B FLOPs per block.</span></p>
-        </div>
-      </div>
-
-      <div class="toc-item">
-        <span class="n">04</span>
-        <div>
-          <a class="t" href="posts/04-gpt2-model.html">GPT-2: a decoder that writes one token at a time</a>
-          <p class="d">The causal mask, the full computation diagram, and how a decoder-only model's FLOPs compare against BERT's encoder. <span class="concepts">Autoregressive generation, 1.51B FLOPs per block.</span></p>
-        </div>
-      </div>
-
-      <div class="toc-item">
-        <span class="n">05</span>
-        <div>
-          <a class="t" href="posts/05-t5-model.html">T5: one encoder, one decoder, joined by cross-attention</a>
-          <p class="d">Encoder self-attention, decoder masked attention, and the cross-attention bridge, plus span corruption and prefix conditioning. <span class="concepts">Text-to-text.</span></p>
-        </div>
-      </div>
-
-      <div class="toc-item">
-        <span class="n">06</span>
-        <div>
-          <a class="t" href="posts/06-llama-model.html">LLaMA: smaller models, more data, three sharp ideas</a>
-          <p class="d">RMSNorm, SwiGLU, and rotary position embeddings, traced through the forward pass. The recipe that showed data beats raw parameter count. <span class="concepts">7B to 65B parameters.</span></p>
-        </div>
-      </div>
+      <span class="u"><svg viewBox="0 0 600 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 6 C80 11 140 2 220 7 C300 12 380 2 460 7 C520 10 560 3 598 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+      <span class="count">four</span>
+    </div>
+    <div class="grid2">
+      <div class="toc2"><span class="num"><svg class="ring"><use href="#ring"/></svg><span class="n">03</span></span><div><a class="t" href="posts/03-bert-model.html">BERT: an encoder that reads both directions</a><p class="d">The full data path with exact tensor shapes and a FLOP count per block. <span class="concepts">12 blocks, 768-dim, 1.86B FLOPs.</span></p></div></div>
+      <div class="toc2"><span class="num"><svg class="ring"><use href="#ring"/></svg><span class="n">04</span></span><div><a class="t" href="posts/04-gpt2-model.html">GPT-2: a decoder that writes one token at a time</a><p class="d">The causal mask, the computation diagram, and how its FLOPs compare to BERT. <span class="concepts">Autoregressive.</span></p></div></div>
+      <div class="toc2"><span class="num"><svg class="ring"><use href="#ring"/></svg><span class="n">05</span></span><div><a class="t" href="posts/05-t5-model.html">T5: encoder and decoder, joined by cross-attention</a><p class="d">Encoder self-attention, decoder masked attention, and the cross-attention bridge. <span class="concepts">Text-to-text.</span></p></div></div>
+      <div class="toc2"><span class="num"><svg class="ring"><use href="#ring"/></svg><span class="n">06</span></span><div><a class="t" href="posts/06-llama-model.html">LLaMA: smaller models, more data, three sharp ideas</a><p class="d">RMSNorm, SwiGLU, and rotary embeddings, traced through the forward pass. <span class="concepts">7B to 65B.</span></p></div></div>
     </div>
 
-    <div class="toc-group" id="techniques">
+    <div class="group-head2" id="techniques">
       <h2>Techniques</h2>
-
-      <div class="toc-item">
-        <span class="n">08</span>
-        <div>
-          <a class="t" href="posts/08-prompt-tuning.html">Prompt tuning: from fine-tuning to chain-of-thought</a>
-          <p class="d">Full fine-tuning, soft prompts, prefix tuning, and chain-of-thought, ending with the MedPrompt result that pushed GPT-4 to 90.2% on medical QA. <span class="concepts">Parameter-efficient prompting.</span></p>
-        </div>
-      </div>
-
-      <div class="toc-item">
-        <span class="n">09</span>
-        <div>
-          <a class="t" href="posts/09-scaling-foundation-models.html">Scaling: from GPT-3 to GPT-4</a>
-          <p class="d">What changes when a decoder grows from millions to hundreds of billions of parameters: few-shot learning, multimodality, and the risks that come with scale. <span class="concepts">GPT-3, PaLM, GPT-4.</span></p>
-        </div>
-      </div>
+      <span class="u"><svg viewBox="0 0 600 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 7 C80 2 140 11 220 6 C300 2 380 11 460 6 C520 3 560 10 598 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+      <span class="count">two</span>
+    </div>
+    <div class="grid2">
+      <div class="toc2"><span class="num"><svg class="ring"><use href="#ring"/></svg><span class="n">08</span></span><div><a class="t" href="posts/08-prompt-tuning.html">Prompt tuning: from fine-tuning to chain-of-thought</a><p class="d">Soft prompts, prefix tuning, and CoT, ending with MedPrompt at 90.2% on medical QA. <span class="concepts">Parameter-efficient.</span></p></div></div>
+      <div class="toc2"><span class="num"><svg class="ring"><use href="#ring"/></svg><span class="n">09</span></span><div><a class="t" href="posts/09-scaling-foundation-models.html">Scaling: from GPT-3 to GPT-4</a><p class="d">What changes from millions to hundreds of billions of parameters: few-shot, multimodality, risk. <span class="concepts">GPT-3, PaLM, GPT-4.</span></p></div></div>
     </div>
   </section>
 
-  <!-- Colophon / about -->
-  <aside class="colophon">
-    <h2>About the author</h2>
-    <p><span class="name">Hiva Mohammadzadeh</span> is a Masters student in Computer Science at Stanford and a graduate of EECS at UC Berkeley. She works on efficient large language models: KV-cache quantization, speculative decoding, and agent systems, with work published at ACL and NeurIPS. More at <a href="https://hivam.org/">hivam.org</a>, and the source presentations on <a href="https://github.com/HivaMohammadzadeh1/Presentations">GitHub</a>.</p>
+  <!-- Colophon -->
+  <aside class="colophon2">
+    <div class="portrait">
+      <img src="images/hiva-profile.jpeg" alt="Hiva Mohammadzadeh">
+      <svg class="frame" viewBox="0 0 108 108" aria-hidden="true"><path d="M6 6 C40 4 78 5 102 6 C104 40 103 70 102 102 C70 104 40 103 6 102 C4 70 5 40 6 6 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </div>
+    <div class="info">
+      <h2>About the author</h2>
+      <p><span class="name">Hiva Mohammadzadeh</span> is a Masters student in Computer Science at Stanford and a graduate of EECS at UC Berkeley. She works on efficient large language models: KV-cache quantization, speculative decoding, and agent systems, with work published at ACL and NeurIPS. More at <a href="https://hivam.org/">hivam.org</a>, and the source presentations on <a href="https://github.com/HivaMohammadzadeh1/Presentations">GitHub</a>.</p>
+    </div>
   </aside>
 </main>
 
-<footer class="site-footer">
-  <div class="container">
-    <p><strong>Deep Learning from the Inside Out</strong></p>
-    <p style="margin-top:0.4rem;"><a href="https://hivam.org/">Hiva Mohammadzadeh</a> — Stanford MSCS, UC Berkeley EECS</p>
-  </div>
+<footer class="footer-band">
+  <p class="big">Deep Learning from the Inside Out</p>
+  <p class="sub"><a href="https://hivam.org/">Hiva Mohammadzadeh</a> &nbsp;·&nbsp; Stanford MSCS, UC Berkeley EECS</p>
 </footer>
 
 <script>
