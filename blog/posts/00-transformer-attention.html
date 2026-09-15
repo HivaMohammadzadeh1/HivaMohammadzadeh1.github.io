@@ -109,6 +109,44 @@
 
       <h2 id="self-attention">Self-attention</h2>
       <p>Self-attention is the mechanism at the center of the Transformer. For each token in the sequence, it computes how much that token should attend to every other token, then builds a weighted combination of all token representations from those weights.</p>
+
+      <div class="sketch-wrap">
+        <svg class="sketch" viewBox="0 0 680 264" role="img" aria-label="Self-attention: the token cat attends to every token in the sentence at once.">
+          <defs>
+            <filter id="rough-attn" x="-5%" y="-5%" width="110%" height="120%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="2" seed="7" result="noise"/>
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.4"/>
+            </filter>
+          </defs>
+          <text x="22" y="34" class="hi" font-size="30">self-attention</text>
+          <text x="22" y="58" class="lbl" font-size="19">every token looks at every other token, at once</text>
+          <g filter="url(#rough-attn)" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="20"  y="170" width="108" height="56" rx="7"/>
+            <rect x="150" y="170" width="108" height="56" rx="7" class="stroke-hi" stroke-width="2.8"/>
+            <rect x="280" y="170" width="108" height="56" rx="7"/>
+            <rect x="410" y="170" width="108" height="56" rx="7"/>
+            <rect x="540" y="170" width="108" height="56" rx="7"/>
+            <path class="stroke-hi" d="M204,170 Q137,92 74,170"/>
+            <path class="stroke-hi" d="M198,170 Q204,124 210,170"/>
+            <path class="stroke-hi" d="M210,170 Q272,92 334,170"/>
+            <path class="stroke-hi" d="M212,170 Q330,74 464,170"/>
+            <path class="stroke-hi" d="M214,170 Q400,60 594,170"/>
+            <path class="stroke-hi" d="M67,161 L74,172 L81,161"/>
+            <path class="stroke-hi" d="M327,161 L334,172 L341,161"/>
+            <path class="stroke-hi" d="M457,161 L464,172 L471,161"/>
+            <path class="stroke-hi" d="M587,161 L594,172 L601,161"/>
+          </g>
+          <g font-size="23">
+            <text x="74"  y="205" text-anchor="middle" class="lbl">The</text>
+            <text x="204" y="205" text-anchor="middle" class="hi">cat</text>
+            <text x="334" y="205" text-anchor="middle" class="lbl">sat</text>
+            <text x="464" y="205" text-anchor="middle" class="lbl">on</text>
+            <text x="594" y="205" text-anchor="middle" class="lbl">mat</text>
+          </g>
+          <text x="204" y="252" text-anchor="middle" class="hi" font-size="20">query</text>
+        </svg>
+        <p class="caption"><span class="fig">Figure</span> Self-attention lets the query token &ldquo;cat&rdquo; weigh every token in the sentence in parallel, with no left-to-right ordering. The weights come from softmax(QK<sup>T</sup> / &radic;d).</p>
+      </div>
       <p>Each token is projected into three vectors: a <strong>query</strong> (Q), a <strong>key</strong> (K), and a <strong>value</strong> (V). The attention score between two tokens is the dot product of the first token's query and the second token's key. The scores are divided by the square root of the key dimension, then passed through a softmax to get weights. The output for a token is the weighted sum of every value vector.</p>
 
       <div class="flow-diagram">
