@@ -89,18 +89,34 @@
       </article>
       <article class="card">
         <div class="body">
-          <span class="meta">Stanford CS217 · Jan to Mar 2026</span>
-          <h3><a href="https://github.com/HivaMohammadzadeh1/CS217-Final-Project">Dual-precision MX datapath for RLHF on FPGAs</a></h3>
-          <p>An FPGA datapath with runtime-selectable microscaling formats for energy-efficient RLHF training. Profiling all 169 quantizable layers of Qwen2.5-0.5B showed 93.5% tolerate MXFP4; the rest fall back to MXFP8.</p>
-          <div class="tags"><span>FPGA</span><span>quantization</span><span>RLHF</span></div>
+          <span class="meta">Stanford CS153 · 2026 · Python, LoRA, FastAPI</span>
+          <h3><a href="https://github.com/HivaMohammadzadeh1/CS153-frontier-systems">Memex: an interview simulator for ML-systems engineering</a></h3>
+          <p>A staff-engineer AI judge runs design interviews and production incidents against a hire bar, a persistent learner model tracks every concept, and a fine-tuned router picks the tutor's context under a token budget. The router was trained as LoRA on four Qwen2.5 sizes on a 32-GPU H100 cluster; the 7B one matches the frontier oracle's selection at 0.81 Jaccard.</p>
+          <div class="tags"><span>context routing</span><span>fine-tuning</span><span>agents</span></div>
         </div>
       </article>
       <article class="card">
         <div class="body">
-          <span class="meta">Stanford CS224N · Jan to Mar 2026</span>
-          <h3><a href="https://github.com/HivaMohammadzadeh1/CS224N-project">MrBERT: dynamic token merging for encoder-only transformers</a></h3>
-          <p>Adapted MrT5's delete gate to BERT and XLM-RoBERTa. 90.21% SNLI accuracy at 30% token deletion with a 1.89x A100 inference speedup, using a pre-deletion blending mechanism.</p>
-          <div class="tags"><span>NLP</span><span>efficient inference</span><span>PyTorch</span></div>
+          <span class="meta">Stanford CS349D · 2026 · Python, PyTorch</span>
+          <h3><a href="https://github.com/HivaMohammadzadeh1/CS349D-miniengine">MiniEngine: a small LLM serving engine</a></h3>
+          <p>An OpenAI-compatible serving engine in the spirit of mini-sglang: a bare-bones Qwen3 in pure PyTorch with GQA, RoPE, and SwiGLU, prefill and batched decode, top-k and top-p sampling, an SSE-streaming FastAPI server, and a scheduler written to be the optimization target.</p>
+          <div class="tags"><span>inference systems</span><span>scheduling</span><span>serving</span></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="body">
+          <span class="meta">Stanford CS329A · 2025 · Python</span>
+          <h3><a href="https://github.com/HivaMohammadzadeh1/SelfEvolveAgent-Reasoningbank-code">Self-evolving agents with a reasoning memory</a></h3>
+          <p>An implementation of ReasoningBank: a ReAct agent with browser tools that extracts reasoning strategies from its own trajectories, stores them in an embedding memory bank, and retrieves them for new tasks. Includes an LLM judge for trajectories and an evaluation harness for WebArena, SWE-bench, and Mind2Web.</p>
+          <div class="tags"><span>agent memory</span><span>self-improvement</span><span>evaluation</span></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="body">
+          <span class="meta">Stanford CS217 · 2026 · Verilog, FPGA</span>
+          <h3><a href="https://github.com/HivaMohammadzadeh1/CS217-Final-Project">Dual-precision MX datapath for RLHF on FPGAs</a></h3>
+          <p>An FPGA datapath with runtime-selectable microscaling formats for energy-efficient RLHF training. Profiling all 169 quantizable layers of Qwen2.5-0.5B showed 93.5% tolerate MXFP4; the rest fall back to MXFP8.</p>
+          <div class="tags"><span>FPGA</span><span>quantization</span><span>RLHF</span></div>
         </div>
       </article>
     </div>
@@ -148,11 +164,13 @@
     <div class="section-head"><h2>Projects<svg viewBox="0 0 64 8" preserveAspectRatio="none" aria-hidden="true"><path d="M1 5 C 14 2, 30 7, 46 4 S 60 3, 63 5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></h2><a class="more" href="https://github.com/HivaMohammadzadeh1">GitHub</a></div>
     <ul class="compact">
       <li><a href="https://github.com/HivaMohammadzadeh1/cxpeer">cxpeer</a>: Codex CLI sessions as Claude Code peers.<span class="meta">2026 · open source</span></li>
+      <li><a href="https://github.com/HivaMohammadzadeh1/CS153-frontier-systems">Memex</a>: an interview simulator for ML-systems engineering with a fine-tuned context router.<span class="meta">Stanford CS153 · 2026</span></li>
+      <li><a href="https://github.com/HivaMohammadzadeh1/CS349D-miniengine">MiniEngine</a>: a small OpenAI-compatible LLM serving engine where the scheduler is the optimization target.<span class="meta">Stanford CS349D · 2026</span></li>
       <li><a href="https://github.com/HivaMohammadzadeh1/CS217-Final-Project">Dual-precision MX datapath for layer-adaptive RLHF quantization on FPGAs</a><span class="meta">Stanford CS217 · Jan to Mar 2026</span></li>
       <li><a href="https://github.com/HivaMohammadzadeh1/CS234-Project-RL">Physically grounded world models for video generation with RLHF and DPO</a>: 1,344 human preference annotations across 384 physics videos, a Qwen3-VL-2B reward model, and Wan2.2-T2V-5B fine-tuned with PPO.<span class="meta">Stanford CS234 · Jan to Mar 2026</span></li>
       <li><a href="https://github.com/HivaMohammadzadeh1/CS224N-project">MrBERT: dynamic token merging for encoder-only transformers</a><span class="meta">Stanford CS224N · Jan to Mar 2026</span></li>
       <li><a href="https://github.com/HivaMohammadzadeh1/cs230-evaluation-model">Neural verifier for structured table extraction</a>: neural scoring of extracted tables beyond rule-based checks.<span class="meta">Stanford · Sep to Dec 2025</span></li>
-      <li><a href="https://github.com/HivaMohammadzadeh1/SelfEvolveAgent-Reasoningbank-code">Self-evolving LLM agent with long-term reasoning memory</a>: ReasoningBank-style memory for retrieval, tool use, and self-reflection without retraining.<span class="meta">Stanford · Sep to Dec 2025</span></li>
+      <li><a href="https://github.com/HivaMohammadzadeh1/SelfEvolveAgent-Reasoningbank-code">Self-evolving LLM agent with long-term reasoning memory</a>: an implementation of ReasoningBank with a ReAct browser agent and an evaluation harness.<span class="meta">Stanford CS329A · 2025</span></li>
       <li><a href="https://github.com/HivaMohammadzadeh1/CS288-projects">Policy gradients for transformer interpretability</a><span class="meta">UC Berkeley · Mar to May 2023</span></li>
       <li><a href="https://github.com/HivaMohammadzadeh1/Presentations">Survey of LLM architectures, benchmarks, and techniques</a>: BERT, GPT-2, T5, LLaMA, GLUE and SuperGLUE, prompt tuning; expanded into a <a href="blog/index.html">10-part blog series</a>.<span class="meta">UC Berkeley CS199 · 2023</span></li>
       <li><a href="https://github.com/HivaMohammadzadeh1/CS61C-47CProject">NumC</a>: a simplified NumPy in C and RISC-V assembly.<span class="meta">UC Berkeley CS61C · 2022</span></li>
