@@ -3,127 +3,147 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Survey of Normalization Techniques | Hiva Mohammadzadeh</title>
+  <title>Normalization, from BatchNorm to RMSNorm | Hiva Mohammadzadeh</title>
+  <meta name="description" content="How Batch Norm, Layer Norm, RMSNorm, Group Norm, Instance Norm, and Weight Norm differ, and which one to use for each architecture and batch regime.">
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('theme');
+        if (!t) { t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; }
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+    })();
+  </script>
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
 
-<!-- Animated background -->
-<div class="bg-mesh">
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="orb orb-3"></div>
-</div>
-
-<!-- Reading progress bar -->
 <div class="progress-bar" id="progressBar"></div>
 
 <header class="site-header" id="header">
-  <div class="container-wide" style="max-width: 1140px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;">
-    <a href="../index.html" class="site-title">
-      <span class="logo-mark">DL</span>
-      Inside Out
-    </a>
+  <div class="container-wide">
+    <a href="../index.html" class="site-title"><span class="logo-mark">DL</span> Inside Out</a>
     <nav class="site-nav">
-      <a href="../index.html">All Posts</a>
-      <a href="01-activation-functions.html">&larr; A Survey of Activation Functions</a>
-      <a href="03-bert-model.html">BERT from the Inside Out &rarr;</a>
+      <a href="../index.html">All posts</a>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch color theme" title="Switch theme">
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>
+      </button>
     </nav>
   </div>
 </header>
 
-<main class="container">
-  <article>
-    <h1 id="survey-of-normalization-techniques">Survey of Normalization Techniques</h1>
-<div class="meta">
-  <span><a href="https://hivam.org/">Hiva Mohammadzadeh</a> &middot; Stanford MSCS &middot; UC Berkeley EECS</span>
-  <span class="tag">Deep Learning</span>
-  <span class="tag">Training</span>
-  <span class="tag">Normalization</span>
-</div>
+<div class="post-layout">
+  <aside class="post-toc">
+    <div class="toc-label">On this page</div>
+    <ul id="tocList"></ul>
+  </aside>
 
-<div class="tldr">
-<strong>TL;DR:</strong> Normalization keeps your network's activations (or weights) in a well-behaved range so training stays fast and stable. <strong>Batch Norm</strong> works great for CNNs with large batches. <strong>Layer Norm</strong> is the default for Transformers and RNNs. <strong>RMSNorm</strong> is the cheaper, modern drop-in that skips re-centering. <strong>Group Norm</strong> is your escape hatch when batch sizes are small. <strong>Instance Norm</strong> shines in style transfer, and <strong>Weight Norm</strong> smooths the loss landscape by normalizing weights directly. Pick the one that matches your architecture and batch regime.
-</div>
+  <div class="post-main">
+    <article>
+      <div class="post-kicker"><span class="part">02</span> Foundations</div>
+      <h1 id="top">Normalization, from BatchNorm to RMSNorm</h1>
+      <p class="byline">By Hiva Mohammadzadeh · Stanford MSCS, UC Berkeley EECS</p>
 
-<h2 id="why-normalization-matters">Why Normalization Matters</h2>
-<p>If you have ever watched a training run diverge at epoch 3 or plateau for hours, the culprit is often un-normalized activations. I keep coming back to a handful of reasons why normalization is one of the first things I reach for:</p>
-<ul>
-<li><strong>Faster optimization.</strong> Normalization prevents weights from exploding by restricting them to a certain range, so the optimizer can take larger, more confident steps.</li>
-<li><strong>Unbiased features.</strong> Without normalization, features with naturally larger magnitudes dominate the gradient signal. Normalization levels the playing field.</li>
-<li><strong>Implicit regularization.</strong> Adding noise through mini-batch statistics (or channel statistics) acts as a lightweight regularizer, reducing overfitting in practice.</li>
-</ul>
-<p>The short version: normalization accelerates and stabilizes learning, full stop. The longer version is choosing <em>which</em> normalization to use, and that is what the rest of this post is about.</p>
-<h2 id="the-big-picture-what-normalization-does">The Big Picture: What Normalization Does</h2>
-<p>Every normalization technique follows roughly the same template:</p>
-<div class="math-block">
-<code>output = (input - mean) / std &middot; &gamma; + &beta;</code>
-</div>
+      <div class="tldr-box">
+        Normalization keeps a network's activations or weights in a well-behaved range, so training
+        stays fast and stable. Batch Norm suits CNNs with large batches. Layer Norm is the default for
+        Transformers and RNNs. RMSNorm is the cheaper, modern drop-in that skips re-centering. Group
+        Norm handles small batch sizes. Instance Norm is used for style transfer, and Weight Norm
+        smooths the loss landscape by normalizing weights directly. Pick the one that matches your
+        architecture and batch regime.
+      </div>
 
-<p>You compute a mean and standard deviation over <em>some</em> set of dimensions, normalize, then let the network learn a scale (&gamma;) and shift (&beta;) to recover any representation it needs. The techniques differ only in <strong>which dimensions</strong> you compute those statistics over. That single design choice changes everything about when and where a method works well.</p>
-<div class="diagram">
-  <img src="../images/normalization_techniques/page-03.png" alt="Normalization dimensions at a glance" loading="lazy">
-  <p class="caption">Normalization dimensions at a glance</p>
-</div>
+      <hr>
 
-<h2 id="layer-norm">Layer Norm</h2>
-<p>Layer Norm normalizes each individual example across all of its features. For a single sample in the batch, you compute the mean and variance over the entire <strong>[C, H, W]</strong> volume (or, in a Transformer, across the hidden dimension).</p>
-<div class="math-block">
-<code>p<sub>out</sub> = (p<sub>in</sub> - &mu;<sub>t</sub>) / &sigma;<sub>t</sub> &middot; &gamma;<sub>e</sub> + &beta;<sub>e</sub></code>
-</div>
+      <h2 id="why-normalization-matters">Why normalization matters</h2>
+      <p>If you have ever watched a training run diverge at epoch 3 or plateau for hours, the culprit is often un-normalized activations. I reach for normalization first for a few reasons:</p>
+      <ul>
+        <li><strong>Faster optimization.</strong> Normalization prevents weights from exploding by restricting them to a certain range, so the optimizer can take larger, more confident steps.</li>
+        <li><strong>Unbiased features.</strong> Without normalization, features with naturally larger magnitudes dominate the gradient signal. Normalization gives each feature comparable influence.</li>
+        <li><strong>Implicit regularization.</strong> Adding noise through mini-batch statistics (or channel statistics) acts as a lightweight regularizer, reducing overfitting in practice.</li>
+      </ul>
+      <p>Normalization accelerates and stabilizes learning. The harder question is <em>which</em> normalization to use, and that is what the rest of this post covers.</p>
 
-<p>What I like about Layer Norm:</p>
-<ul>
-<li><strong>Re-centering:</strong> makes the model insensitive to shift noise on both inputs and weights.</li>
-<li><strong>Re-scaling:</strong> keeps output representations intact when inputs and weights are randomly scaled.</li>
-<li><strong>Applied at test time</strong> with the same formula -- no need to track running statistics.</li>
-</ul>
-<div class="key-insight">
-<strong>When to reach for it:</strong> Layer Norm is the default in Transformers and works well in RNNs. If you are building anything sequence-to-sequence, start here.
-</div>
+      <hr>
 
-<div class="diagram">
-  <img src="../images/normalization_techniques/page-03.png" alt="Layer Norm: per-example normalization" loading="lazy">
-  <p class="caption">Layer Norm: per-example normalization</p>
-</div>
+      <h2 id="what-normalization-does">What normalization does</h2>
+      <p>Every normalization technique follows roughly the same template:</p>
+      <div class="math-block">
+        <code>output = (input - mean) / std &middot; &gamma; + &beta;</code>
+      </div>
 
-<h2 id="batch-norm">Batch Norm</h2>
-<p>Batch Norm goes the other direction: instead of normalizing within a single example, it normalizes <strong>across the mini-batch dimension</strong> for each feature channel. You subtract the batch mean and divide by the batch standard deviation, then apply learned &gamma; and &beta; per channel.</p>
-<div class="math-block">
-<code>p<sub>out</sub> = (p<sub>in</sub> - &mu;<sub>c</sub>) / &sigma;<sub>c</sub> &middot; &gamma;<sub>c</sub> + &beta;<sub>c</sub></code>
-</div>
+      <p>You compute a mean and standard deviation over <em>some</em> set of dimensions, normalize, then let the network learn a scale (&gamma;) and shift (&beta;) to recover any representation it needs. The techniques differ only in <strong>which dimensions</strong> you compute those statistics over. That single design choice determines when and where a method works well.</p>
+      <figure class="diagram">
+        <picture><source srcset="../images/normalization_techniques/page-03.webp" type="image/webp"><img src="../images/normalization_techniques/page-03.png" alt="Normalization statistics computed over different tensor dimensions" loading="lazy"></picture>
+        <figcaption class="caption"><span class="fig">Figure 1</span> Normalization dimensions at a glance.</figcaption>
+      </figure>
 
-<p>Batch Norm eases optimization and enables very deep networks to converge. It also serves as a regularization technique because the per-batch statistics inject noise.</p>
-<h3 id="the-problems-i-keep-running-into">The problems I keep running into</h3>
-<ul>
-<li><strong>Small batches kill it.</strong> Batch Norm's error increases rapidly when the batch size drops below about 8. If you are on a single GPU with large images, this is a real problem.</li>
-<li><strong>RNNs are a bad fit.</strong> Sequences from different samples can have different lengths, so you would need a separate normalization layer for each timestep -- space-consuming and awkward.</li>
-</ul>
-<div class="diagram">
-  <img src="../images/normalization_techniques/page-09.png" alt="Batch Norm error vs. batch size" loading="lazy">
-  <p class="caption">Batch Norm error vs. batch size</p>
-</div>
+      <hr>
 
-<div class="note">
-<strong>Batch Norm algorithm recap:</strong> Given a mini-batch B = {x<sub>1</sub> ... x<sub>m</sub>} and learnable parameters &gamma;, &beta;: (1) compute mini-batch mean, (2) compute variance, (3) normalize with a small stability constant &epsilon;, (4) scale and shift. Full algorithm on page 10 of the PDF.
-</div>
+      <h2 id="layer-norm">Layer Norm</h2>
+      <p>Layer Norm normalizes each individual example across all of its features. For a single sample in the batch, you compute the mean and variance over the entire <strong>[C, H, W]</strong> volume (or, in a Transformer, across the hidden dimension).</p>
+      <div class="math-block">
+        <code>p<sub>out</sub> = (p<sub>in</sub> - &mu;<sub>t</sub>) / &sigma;<sub>t</sub> &middot; &gamma;<sub>e</sub> + &beta;<sub>e</sub></code>
+      </div>
 
-<p><strong>Bottom line:</strong> Batch Norm is still the champion for CNN tasks with large, fixed-size batches. Outside that sweet spot, look elsewhere.</p>
-<h2 id="group-norm">Group Norm</h2>
-<p>Group Norm is the batch-size-independent alternative I reach for whenever Batch Norm is not viable. It divides the channels of each training example into <strong>G groups</strong> and computes mean and variance within each group.</p>
-<div class="math-block">
-<code>&mu;<sub>i</sub> = (1/m) &sum; x<sub>k</sub></code><br>
-<code>&sigma;<sub>i</sub> = &radic;( (1/m) &sum; (x<sub>k</sub> - &mu;<sub>i</sub>)<sup>2</sup> + &epsilon; )</code>
-</div>
+      <p>What I like about Layer Norm:</p>
+      <ul>
+        <li><strong>Re-centering.</strong> It makes the model insensitive to shift noise on both inputs and weights.</li>
+        <li><strong>Re-scaling.</strong> It keeps output representations intact when inputs and weights are randomly scaled.</li>
+        <li><strong>Applied at test time</strong> with the same formula, so there is no need to track running statistics.</li>
+      </ul>
+      <div class="key-insight">
+        <strong>When to reach for it.</strong> Layer Norm is the default in Transformers and works well in RNNs. If you are building anything sequence-to-sequence, start here.
+      </div>
 
-<p>Because statistics are computed per-example, <strong>there is zero dependence on batch size</strong>. Whether you are running batch size 2 or 64, Group Norm gives you the same behavior.</p>
-<p>Two special cases worth memorizing:</p>
-<ul>
-<li>Set <strong>G = 1</strong> (one group containing all channels) and you get Layer Norm.</li>
-<li>Set <strong>G = C</strong> (each channel is its own group) and you get Instance Norm.</li>
-</ul>
-<p>Here is the TensorFlow implementation straight from the original paper -- it is surprisingly compact:</p>
-<pre class="highlight"><code class="language-python">def GroupNorm(x, gamma, beta, G, eps=1e-5):
+      <figure class="diagram">
+        <picture><source srcset="../images/normalization_techniques/page-03.webp" type="image/webp"><img src="../images/normalization_techniques/page-03.png" alt="Layer Norm normalizes each example across all of its features" loading="lazy"></picture>
+        <figcaption class="caption"><span class="fig">Figure 2</span> Layer Norm normalizes per example.</figcaption>
+      </figure>
+
+      <hr>
+
+      <h2 id="batch-norm">Batch Norm</h2>
+      <p>Batch Norm goes the other direction: instead of normalizing within a single example, it normalizes <strong>across the mini-batch dimension</strong> for each feature channel. You subtract the batch mean and divide by the batch standard deviation, then apply learned &gamma; and &beta; per channel.</p>
+      <div class="math-block">
+        <code>p<sub>out</sub> = (p<sub>in</sub> - &mu;<sub>c</sub>) / &sigma;<sub>c</sub> &middot; &gamma;<sub>c</sub> + &beta;<sub>c</sub></code>
+      </div>
+
+      <p>Batch Norm eases optimization and enables very deep networks to converge. It also serves as a regularization technique because the per-batch statistics inject noise.</p>
+      <h3 id="the-problems-i-keep-running-into">The problems I keep running into</h3>
+      <ul>
+        <li><strong>Small batches hurt it.</strong> Batch Norm's error increases rapidly when the batch size drops below about 8. If you are on a single GPU with large images, this is a real problem.</li>
+        <li><strong>RNNs are a bad fit.</strong> Sequences from different samples can have different lengths, so you would need a separate normalization layer for each timestep, which is space-consuming and awkward.</li>
+      </ul>
+      <figure class="diagram">
+        <picture><source srcset="../images/normalization_techniques/page-09.webp" type="image/webp"><img src="../images/normalization_techniques/page-09.png" alt="Batch Norm error rises as batch size falls" loading="lazy"></picture>
+        <figcaption class="caption"><span class="fig">Figure 3</span> Batch Norm error against batch size.</figcaption>
+      </figure>
+
+      <div class="note">
+        <strong>Batch Norm algorithm recap.</strong> Given a mini-batch B = {x<sub>1</sub> ... x<sub>m</sub>} and learnable parameters &gamma;, &beta;: (1) compute mini-batch mean, (2) compute variance, (3) normalize with a small stability constant &epsilon;, (4) scale and shift. Full algorithm on page 10 of the PDF.
+      </div>
+
+      <p>Batch Norm remains the best choice for CNN tasks with large, fixed-size batches. Outside that regime, look elsewhere.</p>
+
+      <hr>
+
+      <h2 id="group-norm">Group Norm</h2>
+      <p>Group Norm is the batch-size-independent alternative I reach for whenever Batch Norm is not viable. It divides the channels of each training example into <strong>G groups</strong> and computes mean and variance within each group.</p>
+      <div class="math-block">
+        <code>&mu;<sub>i</sub> = (1/m) &sum; x<sub>k</sub></code><br>
+        <code>&sigma;<sub>i</sub> = &radic;( (1/m) &sum; (x<sub>k</sub> - &mu;<sub>i</sub>)<sup>2</sup> + &epsilon; )</code>
+      </div>
+
+      <p>Because statistics are computed per-example, <strong>there is zero dependence on batch size</strong>. Whether you are running batch size 2 or 64, Group Norm gives you the same behavior.</p>
+      <p>Two special cases worth memorizing:</p>
+      <ul>
+        <li>Set <strong>G = 1</strong> (one group containing all channels) and you get Layer Norm.</li>
+        <li>Set <strong>G = C</strong> (each channel is its own group) and you get Instance Norm.</li>
+      </ul>
+      <p>The TensorFlow implementation from the original paper is compact:</p>
+      <pre class="highlight"><code class="language-python">def GroupNorm(x, gamma, beta, G, eps=1e-5):
     N, C, H, W = x.shape
     x = tf.reshape(x, [N, G, C // G, H, W])
     mean, var = tf.nn.moments(x, [2, 3, 4], keep_dims=True)
@@ -132,152 +152,163 @@
     return x * gamma + beta
 </code></pre>
 
-<div class="diagram">
-  <img src="../images/normalization_techniques/page-05.png" alt="Group Norm: channel groups within each example" loading="lazy">
-  <p class="caption">Group Norm: channel groups within each example</p>
+      <figure class="diagram">
+        <picture><source srcset="../images/normalization_techniques/page-05.webp" type="image/webp"><img src="../images/normalization_techniques/page-05.png" alt="Group Norm splits channels into groups within each example" loading="lazy"></picture>
+        <figcaption class="caption"><span class="fig">Figure 4</span> Group Norm forms channel groups within each example.</figcaption>
+      </figure>
+
+      <hr>
+
+      <h2 id="rmsnorm">RMSNorm</h2>
+      <p>RMSNorm is the normalization you will find inside LLaMA, Gemma, and most recent large language models. It is an extension of Layer Norm that <strong>drops the re-centering step entirely</strong> and normalizes by the root mean square of the activations instead.</p>
+      <div class="math-block">
+        <code>RMS(a) = &radic;( (1/n) &sum; a<sub>i</sub><sup>2</sup> )</code><br>
+        <code>a&#772;<sub>i</sub> = (a<sub>i</sub> / RMS(a)) &middot; g<sub>i</sub></code>
+      </div>
+
+      <p>Why I prefer it for large-scale training:</p>
+      <ul>
+        <li><strong>One pass instead of two.</strong> Layer Norm needs a pass to compute the mean and another for variance. RMSNorm only needs one pass to compute the RMS, which is real wall-clock savings at scale.</li>
+        <li><strong>Re-scaling invariance</strong> and implicit learning rate adaptation, without the cost of re-centering.</li>
+        <li><strong>Better with high-variance data,</strong> since it handles large activation magnitudes more gracefully than standard Layer Norm.</li>
+      </ul>
+      <div class="key-insight">
+        <strong>Practical note.</strong> If you are fine-tuning any modern LLM (LLaMA, Mistral, Gemma), you are already using RMSNorm whether you realize it or not. Understanding it helps you debug training instabilities.
+      </div>
+
+      <hr>
+
+      <h2 id="instance-norm-and-weight-norm">Instance Norm and Weight Norm</h2>
+      <p>These two are more specialized, but worth knowing.</p>
+      <h3 id="instance-norm">Instance Norm</h3>
+      <p>Instance Norm is like Layer Norm but normalizes across <strong>each channel independently</strong> in each training example. It is applied at test time, just like Layer Norm.</p>
+      <div class="math-block">
+        <code>y<sub>tijk</sub> = (x<sub>tijk</sub> - &mu;<sub>ti</sub>) / &radic;(&sigma;<sub>ti</sub><sup>2</sup> + &epsilon;)</code>
+      </div>
+
+      <p>Its main use is to make the network <strong>agnostic to the contrast of the original image</strong>, which is why it became the default in style transfer and image generation tasks.</p>
+      <h3 id="weight-norm">Weight Norm</h3>
+      <p>Weight Norm normalizes the <strong>weights of the layer</strong> rather than the activations. It separates the weight vector into a magnitude and a direction:</p>
+      <div class="math-block">
+        <code>w = (g / ||v||) &middot; v</code>
+      </div>
+
+      <p>This decoupling gives you a <strong>smoother loss landscape</strong> and more stable training. I have found it most useful in CNN tasks, often as a complement to other normalization methods.</p>
+      <figure class="diagram">
+        <picture><source srcset="../images/normalization_techniques/page-07.webp" type="image/webp"><img src="../images/normalization_techniques/page-07.png" alt="Instance Norm and Weight Norm diagrams" loading="lazy"></picture>
+        <figcaption class="caption"><span class="fig">Figure 5</span> Instance Norm and Weight Norm.</figcaption>
+      </figure>
+
+      <hr>
+
+      <h2 id="mnist-convergence">MNIST convergence</h2>
+      <p>I ran Batch Norm, Layer Norm, Instance Norm, and Group Norm on MNIST to see how they compare on a simple task:</p>
+      <ul>
+        <li><strong>Training error.</strong> Group Norm and Batch Norm converge fastest.</li>
+        <li><strong>Validation error.</strong> Batch Norm achieves the lowest error, which suggests its implicit regularization from batch statistics helps on well-behaved, large-batch CNN tasks.</li>
+      </ul>
+      <figure class="diagram">
+        <picture><source srcset="../images/normalization_techniques/page-12.webp" type="image/webp"><img src="../images/normalization_techniques/page-12.png" alt="Training and validation error curves on MNIST" loading="lazy"></picture>
+        <figcaption class="caption"><span class="fig">Figure 6</span> Training and validation error curves on MNIST.</figcaption>
+      </figure>
+
+      <hr>
+
+      <h2 id="when-to-use-what">When to use what</h2>
+      <p>My decision process:</p>
+      <ol>
+        <li><strong>Transformer or RNN?</strong> Use <strong>Layer Norm</strong> (or <strong>RMSNorm</strong> if you want efficiency).</li>
+        <li><strong>CNN with large batches?</strong> Use <strong>Batch Norm</strong>.</li>
+        <li><strong>CNN with small/variable batches?</strong> Use <strong>Group Norm</strong>.</li>
+        <li><strong>Style transfer or generative images?</strong> Use <strong>Instance Norm</strong>.</li>
+        <li><strong>Want a smoother loss landscape on CNNs?</strong> Try <strong>Weight Norm</strong>.</li>
+        <li><strong>Training a large language model from scratch?</strong> Use <strong>RMSNorm</strong>.</li>
+      </ol>
+
+      <hr>
+
+      <h2 id="quick-reference">Quick reference</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Technique</th>
+            <th>Normalizes Over</th>
+            <th>Batch Dependent?</th>
+            <th>Best For</th>
+            <th>Test Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Batch Norm</strong></td>
+            <td>Mini-batch (N) per channel</td>
+            <td>Yes</td>
+            <td>CNNs, large batches</td>
+            <td>Running stats</td>
+          </tr>
+          <tr>
+            <td><strong>Layer Norm</strong></td>
+            <td>All features per example [C,H,W]</td>
+            <td>No</td>
+            <td>Transformers, RNNs</td>
+            <td>Same formula</td>
+          </tr>
+          <tr>
+            <td><strong>Group Norm</strong></td>
+            <td>Channel groups per example</td>
+            <td>No</td>
+            <td>CNNs, small batches</td>
+            <td>Same formula</td>
+          </tr>
+          <tr>
+            <td><strong>RMSNorm</strong></td>
+            <td>All features (RMS only)</td>
+            <td>No</td>
+            <td>LLMs, high-variance data</td>
+            <td>Same formula</td>
+          </tr>
+          <tr>
+            <td><strong>Instance Norm</strong></td>
+            <td>Per channel, per example</td>
+            <td>No</td>
+            <td>Style transfer</td>
+            <td>Same formula</td>
+          </tr>
+          <tr>
+            <td><strong>Weight Norm</strong></td>
+            <td>Weight vectors</td>
+            <td>No</td>
+            <td>CNNs, smooth optimization</td>
+            <td>Same formula</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <hr>
+      <p><em>Based on my presentation "Survey of Normalization Techniques" at Berkeley EECS. The original slides, including all diagrams and the full algorithm pseudocode, are in <a href="https://github.com/HivaMohammadzadeh1/Presentations/blob/main/Normalization_Techniques.pdf">Normalization_Techniques.pdf</a>.</em></p>
+    </article>
+
+    <nav class="post-nav">
+      <a class="prev" href="01-activation-functions.html">
+        <div class="dir">Previous</div>
+        <div class="t">← A survey of activation functions</div>
+      </a>
+      <a class="next" href="03-bert-model.html">
+        <div class="dir">Next</div>
+        <div class="t">BERT: an encoder that reads both directions →</div>
+      </a>
+    </nav>
+  </div>
 </div>
-
-<h2 id="rmsnorm-the-efficient-modern-choice">RMSNorm: The Efficient Modern Choice</h2>
-<p>RMSNorm is the normalization you will find inside LLaMA, Gemma, and most recent large language models. It is an extension of Layer Norm that <strong>drops the re-centering step entirely</strong> and normalizes by the root mean square of the activations instead.</p>
-<div class="math-block">
-<code>RMS(a) = &radic;( (1/n) &sum; a<sub>i</sub><sup>2</sup> )</code><br>
-<code>a&#772;<sub>i</sub> = (a<sub>i</sub> / RMS(a)) &middot; g<sub>i</sub></code>
-</div>
-
-<p>Why I prefer it for large-scale training:</p>
-<ul>
-<li><strong>One pass instead of two.</strong> Layer Norm needs a pass to compute the mean and another for variance. RMSNorm only needs one pass to compute the RMS -- this is real wall-clock savings at scale.</li>
-<li><strong>Re-scaling invariance</strong> and implicit learning rate adaptation, without the cost of re-centering.</li>
-<li><strong>Better with high-variance data,</strong> since it handles large activation magnitudes more gracefully than standard Layer Norm.</li>
-</ul>
-<div class="key-insight">
-<strong>Practical note:</strong> If you are fine-tuning any modern LLM (LLaMA, Mistral, Gemma), you are already using RMSNorm whether you realize it or not. Understanding it helps you debug training instabilities.
-</div>
-
-<h2 id="instance-norm-and-weight-norm">Instance Norm and Weight Norm</h2>
-<p>These two are more specialized, but worth knowing.</p>
-<h3 id="instance-norm">Instance Norm</h3>
-<p>Instance Norm is like Layer Norm but normalizes across <strong>each channel independently</strong> in each training example. It is applied at test time, just like Layer Norm.</p>
-<div class="math-block">
-<code>y<sub>tijk</sub> = (x<sub>tijk</sub> - &mu;<sub>ti</sub>) / &radic;(&sigma;<sub>ti</sub><sup>2</sup> + &epsilon;)</code>
-</div>
-
-<p>The main use case: it makes the network <strong>agnostic to the contrast of the original image</strong>, which is why it became the default in style transfer and image generation tasks.</p>
-<h3 id="weight-norm">Weight Norm</h3>
-<p>Weight Norm takes a completely different approach -- it normalizes the <strong>weights of the layer</strong> rather than the activations. It separates the weight vector into a magnitude and a direction:</p>
-<div class="math-block">
-<code>w = (g / ||v||) &middot; v</code>
-</div>
-
-<p>This decoupling gives you a <strong>smoother loss landscape</strong> and more stable training. I have found it most useful in CNN tasks, often as a complement to other normalization methods.</p>
-<div class="diagram">
-  <img src="../images/normalization_techniques/page-07.png" alt="Instance Norm and Weight Norm diagrams" loading="lazy">
-  <p class="caption">Instance Norm and Weight Norm diagrams</p>
-</div>
-
-<h2 id="mnist-convergence-what-i-saw-in-practice">MNIST Convergence: What I Saw in Practice</h2>
-<p>I ran Batch Norm, Layer Norm, Instance Norm, and Group Norm on MNIST to see how they compare on a simple task:</p>
-<ul>
-<li><strong>Training error:</strong> Group Norm and Batch Norm converge fastest.</li>
-<li><strong>Validation error:</strong> Batch Norm ultimately achieves the lowest error, suggesting its implicit regularization from batch statistics gives it an edge on well-behaved, large-batch CNN tasks.</li>
-</ul>
-<div class="diagram">
-  <img src="../images/normalization_techniques/page-12.png" alt="Training &amp; validation error curves on MNIST" loading="lazy">
-  <p class="caption">Training &amp; validation error curves on MNIST</p>
-</div>
-
-<h2 id="when-to-use-what">When to Use What</h2>
-<p>Here is my decision process:</p>
-<ol>
-<li><strong>Transformer or RNN?</strong> Use <strong>Layer Norm</strong> (or <strong>RMSNorm</strong> if you want efficiency).</li>
-<li><strong>CNN with large batches?</strong> Use <strong>Batch Norm</strong>.</li>
-<li><strong>CNN with small/variable batches?</strong> Use <strong>Group Norm</strong>.</li>
-<li><strong>Style transfer or generative images?</strong> Use <strong>Instance Norm</strong>.</li>
-<li><strong>Want a smoother loss landscape on CNNs?</strong> Try <strong>Weight Norm</strong>.</li>
-<li><strong>Training a large language model from scratch?</strong> Use <strong>RMSNorm</strong>.</li>
-</ol>
-<h2 id="quick-reference">Quick Reference</h2>
-<table>
-<thead>
-<tr>
-<th>Technique</th>
-<th>Normalizes Over</th>
-<th>Batch Dependent?</th>
-<th>Best For</th>
-<th>Test Time</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Batch Norm</strong></td>
-<td>Mini-batch (N) per channel</td>
-<td>Yes</td>
-<td>CNNs, large batches</td>
-<td>Running stats</td>
-</tr>
-<tr>
-<td><strong>Layer Norm</strong></td>
-<td>All features per example [C,H,W]</td>
-<td>No</td>
-<td>Transformers, RNNs</td>
-<td>Same formula</td>
-</tr>
-<tr>
-<td><strong>Group Norm</strong></td>
-<td>Channel groups per example</td>
-<td>No</td>
-<td>CNNs, small batches</td>
-<td>Same formula</td>
-</tr>
-<tr>
-<td><strong>RMSNorm</strong></td>
-<td>All features (RMS only)</td>
-<td>No</td>
-<td>LLMs, high-variance data</td>
-<td>Same formula</td>
-</tr>
-<tr>
-<td><strong>Instance Norm</strong></td>
-<td>Per channel, per example</td>
-<td>No</td>
-<td>Style transfer</td>
-<td>Same formula</td>
-</tr>
-<tr>
-<td><strong>Weight Norm</strong></td>
-<td>Weight vectors</td>
-<td>No</td>
-<td>CNNs, smooth optimization</td>
-<td>Same formula</td>
-</tr>
-</tbody>
-</table>
-
-<hr />
-<p><em>This post is based on my presentation "Survey of Normalization Techniques" at Berkeley EECS. The original slides, including all diagrams and the full algorithm pseudocode, are available in <a href="https://github.com/HivaMohammadzadeh1/Presentations/blob/main/Normalization_Techniques.pdf">Normalization_Techniques.pdf</a>.</em></p>
-  </article>
-</main>
 
 <footer class="site-footer">
   <div class="container">
     <p><strong>Deep Learning from the Inside Out</strong></p>
-    <p style="margin-top: 0.35rem;"><a href="https://hivam.org/">Hiva Mohammadzadeh</a> &middot; Stanford MSCS &middot; UC Berkeley EECS</p>
-    <p style="margin-top: 0.35rem; font-size: 0.8rem;">Based on <a href="https://github.com/HivaMohammadzadeh1/Presentations">presentations</a> originally created in 2023</p>
-    <p style="margin-top: 0.5rem;"><a href="../index.html">Back to all posts</a></p>
+    <p style="margin-top:0.4rem;"><a href="../index.html">Hiva Mohammadzadeh</a> · Stanford MSCS, UC Berkeley EECS</p>
+    <p style="margin-top:0.5rem; color:var(--ink-3);"><a href="../index.html">Back to all posts</a></p>
   </div>
 </footer>
 
-<script>
-// Reading progress bar
-window.addEventListener('scroll', () => {
-  const doc = document.documentElement;
-  const scrollTop = doc.scrollTop;
-  const scrollHeight = doc.scrollHeight - doc.clientHeight;
-  const progress = (scrollTop / scrollHeight) * 100;
-  document.getElementById('progressBar').style.width = progress + '%';
-  document.getElementById('header').classList.toggle('scrolled', scrollTop > 10);
-}, { passive: true });
-</script>
-
+<script src="../js/post.js" defer></script>
 </body>
 </html>
