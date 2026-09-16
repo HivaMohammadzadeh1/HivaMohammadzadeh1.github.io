@@ -24,6 +24,7 @@
     <a class="brand" href="#top">Hiva Mohammadzadeh</a>
     <ul>
       <li><a href="#news">News</a></li>
+      <li><a href="#writing">Writing</a></li>
       <li><a href="#work">Work</a></li>
       <li><a href="#publications">Publications</a></li>
       <li><a href="#education">Education</a></li>
@@ -63,7 +64,8 @@
 <section id="news">
     <div class="section-head"><h2>News<svg viewBox="0 0 64 8" preserveAspectRatio="none" aria-hidden="true"><path d="M1 5 C 14 2, 30 7, 46 4 S 60 3, 63 5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></h2><span class="hand">what I have been up to</span></div>
     <ol class="news">
-      <li class="latest"><span class="new">new<svg viewBox="0 0 34 18" aria-hidden="true"><path d="M2 14 C 10 4, 20 3, 31 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M25 3 L 32 8 L 26 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><time datetime="2026-09-15">Sep 15, 2026</time><div><span class="tag">Release</span>cxpeer 0.5.0 adds a context meter that shows every peer's live prompt size and a <code class="mono">--lean</code> mode for spawning peers. New landing page at <a href="https://hivam.org/cxpeer/">hivam.org/cxpeer</a>.</div></li>
+      <li class="latest"><span class="new">new<svg viewBox="0 0 34 18" aria-hidden="true"><path d="M2 14 C 10 4, 20 3, 31 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M25 3 L 32 8 L 26 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><time datetime="2026-09-16">Sep 16, 2026</time><div><span class="tag">Writing</span>Published <a href="blog/index.html">Deep Learning from the Inside Out</a>, a hand-illustrated ten-part series that takes the transformer, BERT, GPT-2, T5, and LLaMA apart to their weight matrices, tensor shapes, and FLOP counts.</div></li>
+      <li><time datetime="2026-09-15">Sep 15, 2026</time><div><span class="tag">Release</span>cxpeer 0.5.0 adds a context meter that shows every peer's live prompt size and a <code class="mono">--lean</code> mode for spawning peers. New landing page at <a href="https://hivam.org/cxpeer/">hivam.org/cxpeer</a>.</div></li>
       <li><time datetime="2026-09-10">Sep 10, 2026</time><div><span class="tag">Project</span>Released <a href="https://github.com/HivaMohammadzadeh1/cxpeer">cxpeer</a>, which makes Codex CLI sessions show up as Claude Code peers: event-driven messaging between the two agents, no daemon, no polling.</div></li>
       <li><time datetime="2026-08">Aug 2026</time><div><span class="tag">Paper</span><a href="https://openreview.net/forum?id=7UAEUTPW28">Who Needs Every Token?</a>, our MrBERT work on learned token deletion for subword transformers, was accepted at the COLM 2026 Efficient Reasoning workshop: 1.89x faster inference on an A100 at 30% deletion with 0.27 points of SNLI accuracy lost.</div></li>
       <li><time datetime="2026-03">Mar 2026</time><div><span class="tag">Projects</span>Three Stanford projects wrapped: a dual-precision MX datapath for RLHF quantization on FPGAs (CS217), physically grounded world models for video generation with RLHF and DPO (CS234), and MrBERT, dynamic token merging for encoder-only transformers (CS224N). Details under <a href="#projects">Projects</a>.</div></li>
@@ -73,6 +75,23 @@
       <li><time datetime="2024-12">Dec 2024</time><div><span class="tag">Role</span>Joined IntuigenceAI as a machine learning engineer, building multi-agent LLM systems for industrial applications.</div></li>
       <li><time datetime="2023-12">Dec 2023</time><div><span class="tag">Award</span>Third place at SCET's Collider Cup XIII for <a href="https://scet.berkeley.edu/announcing-the-winners-for-collider-cup-xiii/">TensorZipper</a>, a model compression algorithm. <a href="https://arxiv.org/abs/2310.12072">SPEED</a> appeared at the ENLSP workshop, NeurIPS 2023.</div></li>
     </ol>
+  </section>
+
+  <section id="writing">
+    <div class="section-head"><h2>Writing<svg viewBox="0 0 64 8" preserveAspectRatio="none" aria-hidden="true"><path d="M1 5 C 14 2, 30 7, 46 4 S 60 3, 63 5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></h2><a class="more" href="blog/index.html">All posts</a></div>
+    <div class="work-note"><span class="hand">every diagram here is hand-drawn</span><svg viewBox="0 0 52 30" aria-hidden="true"><path d="M3 26 C 12 10, 28 6, 46 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M38 4 L 47 10 L 39 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="cards">
+      <article class="card feature">
+        <a class="media" href="blog/index.html" aria-label="Deep Learning from the Inside Out"><img src="images/blog-cover.png" alt="Deep Learning from the Inside Out: a hand-drawn diagram of one transformer block" width="960" height="760"></a>
+        <div class="body">
+          <span class="meta">2023 to 2026 · 10 posts · self-published</span>
+          <h3><a href="blog/index.html">Deep Learning from the Inside Out</a></h3>
+          <p>A ten-part series that takes modern language models apart, the transformer, BERT, GPT-2, T5, and LLaMA, down to their weight matrices, tensor shapes, and FLOP counts. Every claim is one you can check with arithmetic. Written from my UC Berkeley CS199 study and hand-illustrated throughout.</p>
+          <div class="tags"><span>transformers</span><span>attention</span><span>BERT · GPT · T5 · LLaMA</span><span>FLOPs</span></div>
+          <a class="cta" href="blog/index.html">Read the series →</a>
+        </div>
+      </article>
+    </div>
   </section>
 
   <section id="work">
